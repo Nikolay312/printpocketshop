@@ -1,7 +1,10 @@
-import type { NextConfig } from "next";
+const { withSentryConfig } = require("@sentry/nextjs");
 
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // existing config (unchanged)
 };
 
-export default nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+});

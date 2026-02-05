@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String?
+  password         String
+  role             Role     @default(USER)
+
+  stripeCustomerId String?  @unique
+
+  orders             Order[]
+  passwordResets     PasswordResetToken[]
+  emailVerifications EmailVerificationToken[]
+
+  emailVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  title       String
+  slug        String   @unique
+  description String
+  price       Int
+  currency    Currency
+
+  format     ProductFormat
+  license    ProductLicense
+  isFeatured Boolean        @default(false)
+
+  status ProductStatus @default(DRAFT)
+
+  fileKey       String?
+  previewImages Json
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  sales Int @default(0)
+
+  orderItems OrderItem[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  products Product[]
+}
+
+model Order {
+  id                    String   @id @default(cuid())
+  stripeSessionId       String   @unique
+  stripePaymentIntentId String?
+  status                OrderStatus
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  total    Int
+  currency Currency
+
+  items     OrderItem[]
+  createdAt DateTime @default(now())
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+
+  price    Int
+  quantity Int
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+/* =========================
+   ENUMS
+========================= */
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Currency {
+  EUR
+  USD
+  BGN
+}
+
+enum ProductFormat {
+  PDF
+  PNG
+  JPG
+  CANVA
+}
+
+enum ProductLicense {
+  PERSONAL
+  COMMERCIAL
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum OrderStatus {
+  PAID
+  REFUNDED
+}
