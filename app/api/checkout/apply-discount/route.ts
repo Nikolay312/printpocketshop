@@ -23,7 +23,7 @@ function getCartCurrency(items: CartItemWithProduct[]) {
   const first = items[0].product.currency;
 
   const hasMixedCurrencies = items.some(
-    (item) => item.product.currency !== first
+    (item: CartItemWithProduct) => item.product.currency !== first
   );
 
   if (hasMixedCurrencies) {
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
     }
 
     const hasUnpublishedItems = cart.items.some(
-      (item) => item.product.status !== "PUBLISHED"
+      (item: CartItemWithProduct) => item.product.status !== "PUBLISHED"
     );
 
     if (hasUnpublishedItems) {
@@ -106,9 +106,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const subtotal = getCartSubtotal(cart.items);
+    const subtotal = getCartSubtotal(cart.items as CartItemWithProduct[]);
 
-    const currency = getCartCurrency(cart.items);
+    const currency = getCartCurrency(cart.items as CartItemWithProduct[]);
 
     if (!currency) {
       return NextResponse.json(
@@ -117,7 +117,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🚨 Enforce EUR store
     if (currency !== "EUR") {
       return NextResponse.json(
         { error: "Store currency must be EUR." },
