@@ -8,6 +8,20 @@ type GuestCartItem = {
   license?: "PERSONAL" | "COMMERCIAL";
 };
 
+type CartItemWithProduct = {
+  id: string;
+  productId: string;
+  quantity: number;
+  license: string;
+  product: {
+    title: string;
+    slug: string;
+    price: number;
+    currency: string;
+    status: string;
+  };
+};
+
 const VALID_LICENSES = ["PERSONAL", "COMMERCIAL"] as const;
 
 export async function POST(req: NextRequest) {
@@ -15,20 +29,14 @@ export async function POST(req: NextRequest) {
     const userId = await getCurrentUserId();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
     const { items } = body as { items: GuestCartItem[] };
 
     if (!Array.isArray(items)) {
-      return NextResponse.json(
-        { error: "Invalid payload" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
     let cart = await prisma.cart.findUnique({
@@ -99,9 +107,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const validItems =
+    const validItems: CartItemWithProduct[] =
       updatedCart?.items.filter(
-        (item) => item.product.status === "PUBLISHED"
+        (item: CartItemWithProduct) => item.product.status === "PUBLISHED"
       ) ?? [];
 
     let subtotal = 0;
@@ -112,7 +120,7 @@ export async function POST(req: NextRequest) {
       currency = item.product.currency;
     }
 
-    const responseItems = validItems.map((item) => ({
+    const responseItems = validItems.map((item: CartItemWithProduct) => ({
       id: item.id,
       productId: item.productId,
       title: item.product.title,
