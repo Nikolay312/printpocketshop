@@ -5,8 +5,19 @@ import { deleteAdminProduct } from "@/lib/admin.products.delete";
 import { revalidatePath } from "next/cache";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
 
+type AdminProduct = {
+  id: string;
+  title: string;
+  format: string;
+  price: number;
+  currency: string;
+  category: {
+    name: string;
+  };
+};
+
 export default async function AdminProductsPage() {
-  const products = await prisma.product.findMany({
+  const products: AdminProduct[] = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       category: true,
@@ -22,7 +33,6 @@ export default async function AdminProductsPage() {
 
   return (
     <div className="space-y-24">
-      {/* ================= ACTION ================= */}
       <section className="flex items-center justify-end">
         <Link
           href="/admin/products/new"
@@ -32,7 +42,6 @@ export default async function AdminProductsPage() {
         </Link>
       </section>
 
-      {/* ================= PRODUCTS SURFACE ================= */}
       <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
         <div className="px-16 py-16">
           {products.length > 0 ? (
