@@ -39,7 +39,7 @@ export async function getAllDiscountCodesForAdmin() {
     },
   });
 
-  return codes.map((code) => ({
+  return codes.map((code: (typeof codes)[number]) => ({
     ...code,
     usedCount: code.usages.length,
   }));
