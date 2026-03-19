@@ -3,7 +3,6 @@ export const runtime = "nodejs";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { Currency } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth.server";
 import { enforceIpRateLimit } from "@/lib/rateLimit";
@@ -23,7 +22,7 @@ type CartItemLike = {
   license: string;
   product: {
     price: number;
-    currency: Currency;
+    currency: string;
     status: "DRAFT" | "PUBLISHED";
     title: string;
     description: string | null;
@@ -36,7 +35,9 @@ function getCartSubtotal<T extends CartItemLike>(items: T[]) {
   }, 0);
 }
 
-function getCartCurrency<T extends CartItemLike>(items: T[]) {
+function getCartCurrency<T extends CartItemLike>(
+  items: T[]
+): T["product"]["currency"] | null {
   if (items.length === 0) return null;
 
   const first = items[0].product.currency;
@@ -72,20 +73,12 @@ function normalizeAppUrl(url: string) {
   return url.endsWith("/") ? url.slice(0, -1) : url;
 }
 
-/**
- * Stripe Checkout does not accept negative line items.
- * To preserve the correct total, distribute the discount across product unit prices.
- *
- * Example:
- * - product A: 1000 x 2
- * - product B: 500 x 1
- * - discount: 300
- *
- * We flatten to unit rows, distribute cents proportionally, then regroup.
- */
-function buildDiscountedLineItems<T extends CartItemLike>(params: {
+function buildDiscountedLineItems<
+  T extends CartItemLike,
+  C extends T["product"]["currency"]
+>(params: {
   items: T[];
-  currency: Currency;
+  currency: C;
   discountAmount: number;
 }): Stripe.Checkout.SessionCreateParams.LineItem[] {
   const { items, currency, discountAmount } = params;
@@ -179,14 +172,14 @@ function buildDiscountedLineItems<T extends CartItemLike>(params: {
   return regroupFlatUnitsToLineItems(flatUnits, currency);
 }
 
-function regroupFlatUnitsToLineItems(
+function regroupFlatUnitsToLineItems<C extends string>(
   flatUnits: Array<{
     key: string;
     title: string;
     description: string | null;
     adjustedUnitAmount: number;
   }>,
-  currency: Currency
+  currency: C
 ): Stripe.Checkout.SessionCreateParams.LineItem[] {
   const grouped = new Map<
     string,
@@ -228,14 +221,17 @@ function regroupFlatUnitsToLineItems(
   }));
 }
 
-function groupCurrencyForStripe(currency: Currency): Lowercase<string> {
-  return currency.toLowerCase() as Lowercase<string>;
+function groupCurrencyForStripe<C extends string>(currency: C): Lowercase<C> {
+  return currency.toLowerCase() as Lowercase<C>;
 }
 
-function createCheckoutFingerprint<T extends CartItemLike>(params: {
+function createCheckoutFingerprint<
+  T extends CartItemLike,
+  C extends T["product"]["currency"]
+>(params: {
   userId: string;
   cartId: string;
-  currency: Currency;
+  currency: C;
   subtotal: number;
   discountAmount: number;
   total: number;
