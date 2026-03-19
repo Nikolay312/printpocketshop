@@ -491,7 +491,7 @@ export async function POST(req: Request) {
         currency,
         status: "PENDING",
         items: {
-          create: validItems.map((item) => ({
+          create: validItems.map((item: (typeof validItems)[number]) => ({
             product: {
               connect: {
                 id: item.productId,
