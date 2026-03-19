@@ -4,24 +4,32 @@ import { getCurrentUserId } from "@/lib/auth.server";
 
 const VALID_LICENSES = ["PERSONAL", "COMMERCIAL"] as const;
 
+type CartItemWithProduct = {
+  id: string;
+  productId: string;
+  quantity: number;
+  license: string;
+  product: {
+    title: string;
+    slug: string;
+    price: number;
+    currency: string;
+    status: string;
+  };
+};
+
 export async function POST(req: NextRequest) {
   try {
     const userId = await getCurrentUserId();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
-    const productId =
-      typeof body.productId === "string" ? body.productId : "";
-    const quantity =
-      typeof body.quantity === "number" ? body.quantity : 1;
-    const license =
-      typeof body.license === "string" ? body.license : "PERSONAL";
+    const productId = typeof body.productId === "string" ? body.productId : "";
+    const quantity = typeof body.quantity === "number" ? body.quantity : 1;
+    const license = typeof body.license === "string" ? body.license : "PERSONAL";
 
     if (!productId) {
       return NextResponse.json(
@@ -31,17 +39,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!VALID_LICENSES.includes(license as (typeof VALID_LICENSES)[number])) {
-      return NextResponse.json(
-        { error: "Invalid license" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid license" }, { status: 400 });
     }
 
     if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 99) {
-      return NextResponse.json(
-        { error: "Invalid quantity" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
     }
 
     const product = await prisma.product.findUnique({
@@ -104,9 +106,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const validItems =
+    const validItems: CartItemWithProduct[] =
       updatedCart?.items.filter(
-        (item) => item.product.status === "PUBLISHED"
+        (item: CartItemWithProduct) => item.product.status === "PUBLISHED"
       ) ?? [];
 
     let subtotal = 0;
@@ -117,7 +119,7 @@ export async function POST(req: NextRequest) {
       currency = item.product.currency;
     }
 
-    const responseItems = validItems.map((item) => ({
+    const responseItems = validItems.map((item: CartItemWithProduct) => ({
       id: item.id,
       productId: item.productId,
       title: item.product.title,
