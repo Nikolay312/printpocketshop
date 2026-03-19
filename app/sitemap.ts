@@ -7,7 +7,8 @@ const BASE_URL = "https://printpocketshop.com";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product.findMany({
     select: {
-      slug: true,    },
+      slug: true,
+    },
   });
 
   const now = new Date();
@@ -72,7 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
 
     // Products
-    ...products.map((product) => ({
+    ...products.map((product: { slug: string }) => ({
       url: `${BASE_URL}/product/${product.slug}`,
       lastModified: now,
       changeFrequency: "monthly" as const,
