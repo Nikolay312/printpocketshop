@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth.server";
-import { ProductLicense, AuditActorType, AuditLevel } from "@prisma/client";
 import { enforceIpRateLimit } from "@/lib/rateLimit";
 import { auditLog } from "@/lib/audit.server";
 import * as Sentry from "@sentry/nextjs";
@@ -30,10 +29,6 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =========================
-       IP RATE LIMIT
-    ========================= */
-
     const ipLimit = await enforceIpRateLimit({
       headers: req.headers,
       routeKey: "license-upgrade:start",
@@ -45,18 +40,10 @@ export async function POST(req: Request) {
       return ipLimit.response;
     }
 
-    /* =========================
-       AUTH
-    ========================= */
-
     const authUserId = await getCurrentUserId();
     if (!authUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    /* =========================
-       USER RATE LIMIT
-    ========================= */
 
     const userLimit = await enforceIpRateLimit({
       headers: req.headers,
@@ -77,10 +64,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    /* =========================
-       AUTHORITATIVE QUERY
-    ========================= */
 
     const orderItem = await prisma.orderItem.findFirst({
       where: {
@@ -117,7 +100,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (orderItem.license !== ProductLicense.PERSONAL) {
+    if (orderItem.license !== "PERSONAL") {
       return NextResponse.json(
         { error: "Upgrade not allowed" },
         { status: 403 }
@@ -126,7 +109,7 @@ export async function POST(req: Request) {
 
     if (
       orderItem.licenseUpgrades.some(
-        (u) => u.toLicense === ProductLicense.COMMERCIAL
+        (u: (typeof orderItem.licenseUpgrades)[number]) => u.toLicense === "COMMERCIAL"
       )
     ) {
       return NextResponse.json(
@@ -144,16 +127,12 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =========================
-       CREATE PENDING UPGRADE
-    ========================= */
-
     const upgrade = await prisma.licenseUpgrade.create({
       data: {
         userId: authUserId,
         orderItemId: orderItem.id,
-        fromLicense: ProductLicense.PERSONAL,
-        toLicense: ProductLicense.COMMERCIAL,
+        fromLicense: "PERSONAL",
+        toLicense: "COMMERCIAL",
         currency: orderItem.order.currency,
         fromPriceCents: orderItem.price,
         toPriceCents: orderItem.product.price,
@@ -162,10 +141,6 @@ export async function POST(req: Request) {
       },
     });
 
-    /* =========================
-       STRIPE SESSION
-    ========================= */
-
     const session = await stripe.checkout.sessions.create(
       {
         mode: "payment",
@@ -173,7 +148,7 @@ export async function POST(req: Request) {
           {
             quantity: 1,
             price_data: {
-              currency: orderItem.order.currency.toLowerCase(),
+              currency: orderItem.order.currency.toLowerCase() as Lowercase<string>,
               unit_amount: deltaCents,
               product_data: {
                 name: `License upgrade: ${orderItem.product.title}`,
@@ -198,13 +173,9 @@ export async function POST(req: Request) {
       data: { stripeCheckoutSessionId: session.id },
     });
 
-    /* =========================
-       AUDIT: UPGRADE INITIATED
-    ========================= */
-
     await auditLog({
       eventType: "LICENSE_UPGRADE_SESSION_CREATED",
-      actorType: AuditActorType.USER,
+      actorType: "USER",
       actorId: authUserId,
       licenseUpgradeId: upgrade.id,
       orderId: orderItem.orderId,
@@ -213,8 +184,8 @@ export async function POST(req: Request) {
       currency: orderItem.order.currency,
       metadata: {
         productId: orderItem.product.id,
-        fromLicense: ProductLicense.PERSONAL,
-        toLicense: ProductLicense.COMMERCIAL,
+        fromLicense: "PERSONAL",
+        toLicense: "COMMERCIAL",
       },
     });
 
@@ -224,7 +195,7 @@ export async function POST(req: Request) {
 
     await auditLog({
       eventType: "LICENSE_UPGRADE_START_FAILED",
-      level: AuditLevel.ERROR,
+      level: "ERROR",
       metadata: { error: String(err) },
     });
 
