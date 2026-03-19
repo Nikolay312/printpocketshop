@@ -2,12 +2,15 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminUser } from "@/lib/adminGuard";
-import {
-  ProductFormat,
-  ProductLicense,
-  Currency,
-  ProductStatus,
-} from "@prisma/client";
+
+/* =========================
+   LOCAL TYPES (SAFE REPLACEMENT)
+========================= */
+
+type ProductFormat = "PDF" | "PNG" | "JPG" | "CANVA";
+type ProductLicense = "PERSONAL" | "COMMERCIAL";
+type Currency = "EUR" | "USD" | "BGN";
+type ProductStatus = "DRAFT" | "PUBLISHED";
 
 /* =========================
    HELPERS
@@ -42,7 +45,7 @@ export async function createAdminProduct(input: {
   await requireAdminUser();
 
   if (
-    input.status === ProductStatus.PUBLISHED &&
+    input.status === "PUBLISHED" &&
     !hasAtLeastOneFile(input.files)
   ) {
     throw new Error("Product file is required before publishing");
@@ -65,23 +68,23 @@ export async function createAdminProduct(input: {
       slug,
       description: input.description ?? "",
       price: input.price,
-      currency: Currency.EUR,
-      format: input.format ?? ProductFormat.PDF,
-      license: ProductLicense.PERSONAL,
+      currency: "EUR",
+      format: input.format ?? "PDF",
+      license: "PERSONAL",
       status: input.status,
       categoryId: input.categoryId,
 
-      // RELATIONAL PREVIEW IMAGES
       previewImages: {
-        create: input.previewImages.map((fileKey, index) => ({
-          fileKey,
-          order: index,
-        })),
+        create: input.previewImages.map(
+          (fileKey: string, index: number) => ({
+            fileKey,
+            order: index,
+          })
+        ),
       },
 
-      // RELATIONAL PRODUCT FILES
       files: {
-        create: input.files.map((key) => ({
+        create: input.files.map((key: string) => ({
           fileKey: key,
           label: null,
         })),
@@ -110,7 +113,7 @@ export async function updateAdminProduct(input: {
   await requireAdminUser();
 
   if (
-    input.status === ProductStatus.PUBLISHED &&
+    input.status === "PUBLISHED" &&
     !hasAtLeastOneFile(input.files)
   ) {
     throw new Error("Product file is required before publishing");
@@ -122,24 +125,24 @@ export async function updateAdminProduct(input: {
       title: input.title,
       description: input.description,
       price: input.price,
-      currency: Currency.EUR,
+      currency: "EUR",
       format: input.format,
       categoryId: input.categoryId,
       status: input.status,
 
-      // Replace preview images
       previewImages: {
         deleteMany: {},
-        create: input.previewImages.map((fileKey, index) => ({
-          fileKey,
-          order: index,
-        })),
+        create: input.previewImages.map(
+          (fileKey: string, index: number) => ({
+            fileKey,
+            order: index,
+          })
+        ),
       },
 
-      // Replace files
       files: {
         deleteMany: {},
-        create: input.files.map((key) => ({
+        create: input.files.map((key: string) => ({
           fileKey: key,
           label: null,
         })),
