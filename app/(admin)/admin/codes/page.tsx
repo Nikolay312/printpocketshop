@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { DiscountCode } from "@prisma/client";
 import {
   getAllDiscountCodesForAdmin,
   deleteDiscountCode,
 } from "@/lib/admin.server";
 import { formatPrice } from "@/lib/formatPrice";
 
-type AdminDiscountCode = DiscountCode & {
-  usedCount: number;
-};
+type AdminDiscountCode = Awaited<
+  ReturnType<typeof getAllDiscountCodesForAdmin>
+>[number];
 
 export default async function AdminCodesPage() {
   const codes: AdminDiscountCode[] = await getAllDiscountCodesForAdmin();
@@ -16,7 +15,6 @@ export default async function AdminCodesPage() {
   return (
     <div className="space-y-24">
       <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-        {/* Header */}
         <div className="flex items-center justify-between px-16 pt-16">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Codes</h1>
@@ -61,7 +59,6 @@ export default async function AdminCodesPage() {
                     key={code.id}
                     className="flex items-center justify-between gap-8 py-8"
                   >
-                    {/* Left */}
                     <div className="space-y-2">
                       <div className="text-base font-medium uppercase tracking-wide text-foreground">
                         {code.code}
@@ -87,7 +84,6 @@ export default async function AdminCodesPage() {
                       </div>
                     </div>
 
-                    {/* Right */}
                     <div className="flex items-center gap-6">
                       <span
                         className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
