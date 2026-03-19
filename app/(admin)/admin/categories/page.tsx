@@ -6,8 +6,17 @@ import {
 } from "@/lib/admin.categories.actions";
 import { revalidatePath } from "next/cache";
 
+type CategoryWithProductCount = {
+  id: string;
+  name: string;
+  slug: string;
+  _count: {
+    products: number;
+  };
+};
+
 export default async function AdminCategoriesPage() {
-  const categories = await prisma.category.findMany({
+  const categories: CategoryWithProductCount[] = await prisma.category.findMany({
     orderBy: { name: "asc" },
     include: {
       _count: {
