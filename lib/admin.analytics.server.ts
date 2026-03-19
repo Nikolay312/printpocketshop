@@ -117,15 +117,19 @@ export async function getLicenseBreakdown() {
     },
   });
 
-  const result = {
+  const result: Record<
+    "PERSONAL" | "COMMERCIAL",
+    { revenue: number; quantity: number }
+  > = {
     PERSONAL: { revenue: 0, quantity: 0 },
     COMMERCIAL: { revenue: 0, quantity: 0 },
   };
 
   for (const item of items) {
     const revenue = item.price * item.quantity;
-    result[item.license].revenue += revenue;
-    result[item.license].quantity += item.quantity;
+    const license = item.license as "PERSONAL" | "COMMERCIAL";
+    result[license].revenue += revenue;
+    result[license].quantity += item.quantity;
   }
 
   return result;
