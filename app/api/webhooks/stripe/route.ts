@@ -25,6 +25,11 @@ if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET missing");
 
 const stripe = new Stripe(stripeSecret);
 
+type TxClient = Omit<
+  typeof prisma,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends" | "$use"
+>;
+
 /* =========================
    ORDER LOOKUP
 ========================= */
@@ -100,7 +105,7 @@ async function handleSuccessfulCheckout(params: {
   }
 
   const updated = await prisma.$transaction(
-    async (tx) => {
+    async (tx: TxClient) => {
       const currentOrder = await tx.order.findUnique({
         where: { id: order.id },
         include: { user: true },
