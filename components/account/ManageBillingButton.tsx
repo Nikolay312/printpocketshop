@@ -28,9 +28,9 @@ export default function ManageBillingButton() {
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="btn-ghost"
+      className="inline-flex items-center justify-center border border-border bg-background px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {loading ? "Opening…" : "Manage billing"}
+      {loading ? "Opening billing portal…" : "Manage billing"}
     </button>
   );
 }

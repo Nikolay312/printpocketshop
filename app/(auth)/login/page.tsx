@@ -1,20 +1,201 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { isValidEmail, isRequired } from "@/lib/validators";
 import { loginUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { motion } from "framer-motion";
+
+const STORAGE_KEY = "printpocketshop-cart";
+
+function sanitizeNext(next: string | null): string | null {
+  if (!next) return null;
+  if (next.startsWith("/") && !next.startsWith("//")) return next;
+  return null;
+}
+
+function getGuestCart() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const parsed = stored ? JSON.parse(stored) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function AnimatedTextLink({
+  href,
+  children,
+  className = "",
+}: {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.span whileHover={{ y: -1 }} className="inline-block">
+      <Link
+        href={href}
+        className={`group relative inline-block font-medium text-slate-600 transition-colors duration-200 hover:text-slate-950 ${className}`}
+      >
+        <span>{children}</span>
+        <span className="absolute bottom-0 left-0 h-px w-0 bg-current transition-all duration-300 group-hover:w-full" />
+      </Link>
+    </motion.span>
+  );
+}
+
+function ArrowTextLink({
+  href,
+  children,
+  className = "",
+}: {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div whileHover="hover" initial="rest" animate="rest" className="inline-block">
+      <Link
+        href={href}
+        className={`group inline-flex items-center gap-2 font-medium text-slate-700 transition-colors duration-200 hover:text-slate-950 ${className}`}
+      >
+        <span>{children}</span>
+        <motion.span
+          variants={{
+            rest: { x: 0, opacity: 0.7 },
+            hover: { x: 4, opacity: 1 },
+          }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          className="text-sm"
+        >
+          →
+        </motion.span>
+      </Link>
+    </motion.div>
+  );
+}
+
+function FeatureCard({
+  eyebrow,
+  title,
+  description,
+  icon,
+  delay = 0,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
+      whileHover="hover"
+      className="group relative w-[190px] shrink-0"
+    >
+      <motion.div
+        variants={{
+          hover: { y: -6, scale: 1.01 },
+        }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="relative min-h-[210px] overflow-hidden rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+      >
+        <motion.div
+          variants={{
+            hover: { opacity: 1 },
+          }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="pointer-events-none absolute inset-0 opacity-0"
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(248,250,252,0.9),rgba(255,255,255,0.98),rgba(244,244,245,0.92))]" />
+          <div className="absolute -right-10 -top-10 h-20 w-20 rounded-full bg-slate-100 blur-3xl" />
+          <div className="absolute bottom-0 left-0 h-16 w-16 rounded-full bg-stone-100/80 blur-3xl" />
+        </motion.div>
+
+        <motion.div
+          variants={{
+            hover: { scaleX: 1, opacity: 1 },
+          }}
+          initial={{ scaleX: 0.45, opacity: 0.65 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-x-4 top-0 h-px origin-left bg-gradient-to-r from-transparent via-slate-400/80 to-transparent"
+        />
+
+        <div className="relative flex h-full flex-col">
+          <div className="flex items-start justify-between gap-3">
+            <motion.div
+              variants={{
+                hover: { y: -2, scale: 1.03 },
+              }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="flex h-10 w-10 items-center justify-center rounded-[18px] border border-slate-200 bg-slate-50 text-slate-950 shadow-[0_6px_14px_rgba(15,23,42,0.035)]"
+            >
+              {icon}
+            </motion.div>
+
+            <motion.div
+              variants={{
+                hover: { x: 0, opacity: 1 },
+              }}
+              initial={{ x: -4, opacity: 0 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="pt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400"
+            >
+              {eyebrow}
+            </motion.div>
+          </div>
+
+          <div className="mt-4">
+            <h3 className="max-w-[10rem] text-[1.12rem] font-semibold leading-[1.18] tracking-[-0.035em] text-slate-950">
+              {title}
+            </h3>
+            <p className="mt-2 max-w-[11rem] text-[14px] leading-6 text-slate-600">
+              {description}
+            </p>
+          </div>
+
+          <div className="mt-auto pt-4">
+            <motion.div
+              variants={{
+                hover: { width: 56, opacity: 1 },
+              }}
+              initial={{ width: 28, opacity: 0.75 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="h-[2px] rounded-full bg-slate-200"
+            />
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
+
+  const nextPath = useMemo(
+    () => sanitizeNext(searchParams.get("next")),
+    [searchParams]
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,9 +217,26 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      await loginUser(email, password);
+
+      await loginUser(email, password, rememberMe);
+
+      const guestCart = getGuestCart();
+
+      if (guestCart.length > 0) {
+        try {
+          await fetch("/api/cart/merge", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: guestCart }),
+          });
+
+          localStorage.removeItem(STORAGE_KEY);
+        } catch {}
+      }
+
       showToast("Welcome back!");
-      router.push("/account/orders");
+      router.replace(nextPath ?? "/shop");
     } catch (err) {
       setError(
         err instanceof Error
@@ -51,88 +249,284 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="px-6 py-32">
-      <div className="mx-auto max-w-md space-y-10">
-        {/* Header */}
-        <header className="space-y-3 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Welcome back
-          </h1>
-          <p className="text-muted leading-relaxed">
-            Log in to access your orders, downloads, and account details.
-          </p>
-        </header>
+    <main className="relative min-h-screen overflow-hidden bg-[#fafaf8] px-6 py-8 sm:px-8 lg:px-12">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.99),rgba(248,250,252,0.96)_44%,rgba(243,245,247,0.94)_100%)]" />
+        <div className="absolute left-[-8rem] top-[-6rem] h-[22rem] w-[22rem] rounded-full bg-white blur-3xl" />
+        <div className="absolute right-[-8rem] top-[8%] h-[22rem] w-[22rem] rounded-full bg-slate-100/90 blur-3xl" />
+        <div className="absolute bottom-[-10rem] left-[10%] h-[20rem] w-[20rem] rounded-full bg-stone-100/80 blur-3xl" />
+        <div className="absolute bottom-[-8rem] right-[12%] h-[18rem] w-[18rem] rounded-full bg-white blur-3xl" />
+        <div className="absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(15,23,42,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.03)_1px,transparent_1px)] [background-size:92px_92px]" />
+      </div>
 
-        {/* Card */}
-        <div className="card space-y-6 p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div
-                role="alert"
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-              >
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">
-                Email address
-              </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">
-                Password
-              </label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                disabled={loading}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              loading={loading}
-              className="w-full"
-            >
-              Log in
-            </Button>
-          </form>
-
-          <p className="text-center text-xs text-muted">
-            Secure login · Your information is protected
-          </p>
-        </div>
-
-        {/* Footer links */}
-        <div className="space-y-2 text-center text-sm">
-          <p className="text-muted">
-            Don’t have an account?{" "}
-            <Link
-              href="/signup"
-              className="font-medium text-foreground hover:underline"
-            >
-              Sign up
-            </Link>
-          </p>
-
-          <Link
-            href="/contact"
-            className="text-xs text-muted hover:underline"
+      <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center">
+        <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="hidden lg:block"
           >
-            Need help accessing your account?
-          </Link>
+            <div className="max-w-2xl">
+              <div className="mb-6 inline-flex items-center rounded-full border border-slate-200/80 bg-white/88 px-4 py-2 text-sm font-medium text-slate-600 shadow-[0_6px_18px_rgba(15,23,42,0.03)]">
+                PrintPocketShop
+              </div>
+
+              <h1 className="max-w-3xl text-5xl font-semibold tracking-[-0.05em] text-slate-950 xl:text-6xl">
+                Access your products and continue where you left off
+              </h1>
+
+              <div className="mt-5 max-w-xl space-y-3">
+                <p className="text-lg leading-8 text-slate-600">
+                  Sign in to access your purchased products, continue checkout,
+                  and manage everything from one clean account space.
+                </p>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, delay: 0.18 }}
+                  className="text-sm leading-7 text-slate-600"
+                >
+                  New here?{" "}
+                  <ArrowTextLink
+                    href={
+                      nextPath
+                        ? `/signup?next=${encodeURIComponent(nextPath)}`
+                        : "/signup"
+                    }
+                    className="text-slate-900"
+                  >
+                    Create your account
+                  </ArrowTextLink>
+                </motion.div>
+              </div>
+
+              <div className="mt-12 flex max-w-[620px] flex-wrap gap-4">
+                <FeatureCard
+                  eyebrow="Purchases"
+                  icon={
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M6 8h12l-1 10H7L6 8Z" />
+                      <path d="M9 8a3 3 0 1 1 6 0" />
+                    </svg>
+                  }
+                  title="Access your products"
+                  description="View your digital purchases anytime."
+                  delay={0.08}
+                />
+                <FeatureCard
+                  eyebrow="Checkout"
+                  icon={
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="M13 6l6 6-6 6" />
+                    </svg>
+                  }
+                  title="Continue checkout"
+                  description="Your cart is saved and ready."
+                  delay={0.16}
+                />
+                <FeatureCard
+                  eyebrow="Account"
+                  icon={
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+                      <path d="M5 20a7 7 0 0 1 14 0" />
+                    </svg>
+                  }
+                  title="Manage your account"
+                  description="Keep your orders and details in one place."
+                  delay={0.24}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.55,
+              delay: 0.05,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="mx-auto w-full max-w-md"
+          >
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
+              <div className="mb-6 text-center max-w-xs mx-auto space-y-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 lg:hidden">
+                  PrintPocketShop
+                </div>
+
+                <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-950 sm:text-3xl">
+                  Welcome Back
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  Sign in to your account
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-800">
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    disabled={loading}
+                    className="border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-800">
+                    Password
+                  </label>
+
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      disabled={loading}
+                      className="border-slate-200 bg-white pr-16 text-slate-950 placeholder:text-slate-400"
+                      containerClassName="relative"
+                    />
+
+                    <motion.button
+                      type="button"
+                      onClick={() => setShowPassword((p) => !p)}
+                      whileHover={{ y: -1 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </motion.button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 whitespace-nowrap">
+                  <label className="flex items-center gap-2 whitespace-nowrap text-sm text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      disabled={loading}
+                      className="h-4 w-4 rounded border-slate-300 text-black focus:ring-2 focus:ring-slate-300"
+                    />
+                    Remember me
+                  </label>
+
+                  <motion.div
+                    whileHover="hover"
+                    initial="rest"
+                    animate="rest"
+                    className="inline-flex"
+                  >
+                    <Link
+                      href="/forgot-password"
+                      className="group inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition-colors duration-200 hover:text-slate-950"
+                    >
+                      <span>Forgot password?</span>
+                      <motion.span
+                        variants={{
+                          rest: { x: 0, opacity: 0 },
+                          hover: { x: 2, opacity: 1 },
+                        }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="text-sm"
+                      >
+                        →
+                      </motion.span>
+                    </Link>
+                  </motion.div>
+                </div>
+
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <Button
+                    type="submit"
+                    loading={loading}
+                    className="h-12 w-full rounded-2xl bg-slate-950 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(15,23,42,0.14)] transition-all hover:bg-slate-900"
+                  >
+                    {loading ? "Signing in..." : "Log in"}
+                  </Button>
+                </motion.div>
+              </form>
+
+              <div className="mt-6 text-center text-sm text-slate-600">
+                Don’t have an account?{" "}
+                <ArrowTextLink
+                  href={
+                    nextPath
+                      ? `/signup?next=${encodeURIComponent(nextPath)}`
+                      : "/signup"
+                  }
+                  className="text-slate-900"
+                >
+                  Create one
+                </ArrowTextLink>
+              </div>
+
+              <div className="mt-6 border-t border-slate-200 pt-5 text-center text-xs leading-6 text-slate-500">
+                By continuing, you agree to our{" "}
+                <AnimatedTextLink href="/policies/terms">
+                  Terms
+                </AnimatedTextLink>
+                ,{" "}
+                <AnimatedTextLink href="/policies/privacy">
+                  Privacy Policy
+                </AnimatedTextLink>{" "}
+                and{" "}
+                <AnimatedTextLink href="/policies/refund">
+                  Refund Policy
+                </AnimatedTextLink>
+                .
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </main>

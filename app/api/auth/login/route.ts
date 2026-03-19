@@ -1,39 +1,125 @@
-// app/api/auth/login/route.ts
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { createSession, getUserByEmail, verifyPassword } from "@/lib/auth.server";
-import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import {
+  createSession,
+  getUserByEmail,
+  verifyPassword,
+} from "@/lib/auth.server";
+import { enforceIpRateLimit } from "@/lib/rateLimit";
+
+type Body = {
+  email?: unknown;
+  password?: unknown;
+  rememberMe?: unknown;
+};
 
 export async function POST(req: Request) {
-  const { email, password } = await req.json().catch(() => ({}));
+  /* =========================
+     GLOBAL IP LIMIT (ANTI-BOT)
+  ========================= */
 
-  if (!email || !password || typeof email !== "string" || typeof password !== "string") {
-    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-  }
-
-  // ✅ Rate limit login attempts (per IP + email)
-  const ip = getClientIp(req.headers);
-  const rl = await checkRateLimit({
-    key: `auth:login:${ip}:${email.toLowerCase()}`,
-    limit: 8,
-    windowSec: 60, // 8 attempts / minute
+  const globalLimit = await enforceIpRateLimit({
+    headers: req.headers,
+    routeKey: "auth:login:global",
+    limit: 40,
+    windowSec: 60,
   });
 
-  if (!rl.ok) {
+  if (!globalLimit.allowed) {
+    return globalLimit.response;
+  }
+
+  /* =========================
+     BODY PARSE (SAFE)
+  ========================= */
+
+  let body: Body;
+
+  try {
+    body = (await req.json()) as Body;
+  } catch {
     return NextResponse.json(
-      { error: "Too many attempts. Please wait and try again." },
-      { status: 429 }
+      { error: "Invalid input" },
+      { status: 400 }
     );
   }
 
-  const user = await getUserByEmail(email);
-  if (!user) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  const email =
+    typeof body.email === "string"
+      ? body.email.trim().toLowerCase()
+      : undefined;
 
-  const ok = await verifyPassword(password, user.password);
-  if (!ok) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  const password =
+    typeof body.password === "string"
+      ? body.password
+      : undefined;
 
-  await createSession(user.id);
+  const rememberMe =
+    typeof body.rememberMe === "boolean"
+      ? body.rememberMe
+      : false;
 
-  return NextResponse.json({ ok: true });
+  if (!email || !password) {
+    return NextResponse.json(
+      { error: "Invalid credentials" },
+      { status: 401 }
+    );
+  }
+
+  /* =========================
+     TARGETED LIMIT (IP + EMAIL)
+  ========================= */
+
+  const targetedLimit = await enforceIpRateLimit({
+    headers: req.headers,
+    routeKey: `auth:login:${email}`,
+    limit: 8,
+    windowSec: 60,
+  });
+
+  if (!targetedLimit.allowed) {
+    return targetedLimit.response;
+  }
+
+  /* =========================
+     AUTH LOGIC
+  ========================= */
+
+  try {
+    const user = await getUserByEmail(email);
+
+    if (!user || !user.password) {
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
+
+    const passwordValid = await verifyPassword(
+      password,
+      user.password
+    );
+
+    if (!passwordValid) {
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
+
+    await createSession(user.id, rememberMe);
+
+    return NextResponse.json({
+      ok: true,
+      emailVerified: user.emailVerified,
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+
+    return NextResponse.json(
+      { error: "Something went wrong" },
+      { status: 500 }
+    );
+  }
 }

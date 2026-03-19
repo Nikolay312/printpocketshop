@@ -1,74 +1,59 @@
-import Link from "next/link";
-import { getAdminProducts } from "@/lib/admin.products.server";
-import { formatPrice } from "@/lib/formatPrice";
+import { prisma } from "@/lib/prisma";
 
-export default async function AdminProductsPage() {
-  const products = await getAdminProducts();
+export default async function AdminHomePage() {
+  const [
+    totalProducts,
+    publishedProducts,
+    draftProducts,
+    totalOrders,
+    paidOrders,
+    totalInvoices,
+  ] = await Promise.all([
+    prisma.product.count(),
+    prisma.product.count({ where: { status: "PUBLISHED" } }),
+    prisma.product.count({ where: { status: "DRAFT" } }),
+    prisma.order.count(),
+    prisma.order.count({ where: { status: "PAID" } }),
+    prisma.invoice.count(),
+  ]);
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Products</h1>
-          <p className="text-gray-500">Manage your digital products.</p>
+    <div className="space-y-24">
+      {/* ================= STATS SURFACE ================= */}
+      <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+        <div className="px-16 py-16 space-y-16">
+          <div className="grid gap-10 md:grid-cols-3">
+            <StatCard title="Total Products" value={totalProducts} />
+            <StatCard title="Published Products" value={publishedProducts} />
+            <StatCard title="Draft Products" value={draftProducts} />
+            <StatCard title="Total Orders" value={totalOrders} />
+            <StatCard title="Paid Orders" value={paidOrders} />
+            <StatCard title="Invoices Generated" value={totalInvoices} />
+          </div>
         </div>
+      </section>
+    </div>
+  );
+}
 
-        <Link
-          href="/admin/products/new"
-          className="rounded-xl bg-black px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
-        >
-          + New product
-        </Link>
+/* ================= COMPONENTS ================= */
+
+function StatCard({
+  title,
+  value,
+}: {
+  title: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-muted/30 px-8 py-8 transition hover:bg-muted/50">
+      <div className="text-xs uppercase tracking-wide text-muted">
+        {title}
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl border divide-y">
-        {products.map((product) => (
-          <div
-            key={product.id}
-            className="flex items-center justify-between px-5 py-4"
-          >
-            <div>
-              <p className="font-medium">{product.title}</p>
-              <p className="text-sm text-gray-400">
-                {product.category.name} · {product.format}
-              </p>
-
-              <span
-                className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs
-                  ${
-                    product.status === "PUBLISHED"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }
-                `}
-              >
-                {product.status}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <span className="font-semibold">
-                {formatPrice(product.price)}
-              </span>
-
-              <Link
-                href={`/admin/products/${product.id}/edit`}
-                className="text-sm underline"
-              >
-                Edit
-              </Link>
-            </div>
-          </div>
-        ))}
-
-        {products.length === 0 && (
-          <div className="px-6 py-10 text-center text-gray-500">
-            No products yet.
-          </div>
-        )}
+      <div className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
+        {value}
       </div>
-    </main>
+    </div>
   );
 }

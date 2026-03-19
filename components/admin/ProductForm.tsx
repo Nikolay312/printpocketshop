@@ -3,14 +3,18 @@
 import { useState, useEffect } from "react";
 import type { ProductFormat, ProductStatus } from "@prisma/client";
 
+/* =========================
+   TYPES
+========================= */
+
 export type AdminProductFormData = {
   title: string;
   description: string;
-  price: number;
+  price: number; // cents
   format?: ProductFormat;
   categoryId: string;
   status: ProductStatus;
-  fileKey: string | null;
+  files: string[];
   previewImages: string[];
 };
 
@@ -27,7 +31,7 @@ type Props = {
     price: number;
     format?: ProductFormat;
     status: ProductStatus;
-    fileKey: string | null;
+    files: string[];
     previewImages?: string[];
     category: {
       id: string;
@@ -38,24 +42,33 @@ type Props = {
   onSubmit: (data: AdminProductFormData) => void;
 };
 
-function parseFileKeys(value: string | null): string[] {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [value];
-  } catch {
-    return [value];
-  }
-}
+/* =========================
+   COMPONENT
+========================= */
 
-export default function ProductForm({ categories, initial, onSubmit }: Props) {
+export default function ProductForm({
+  categories,
+  initial,
+  onSubmit,
+}: Props) {
   const [title, setTitle] = useState(initial?.title ?? "");
-  const [description, setDescription] = useState(initial?.description ?? "");
-  const [price, setPrice] = useState(initial?.price ?? 0);
+  const [description, setDescription] = useState(
+    initial?.description ?? ""
+  );
+
+  const [priceEuros, setPriceEuros] = useState<string>(() => {
+    if (!initial) return "0.00";
+    return (initial.price / 100).toFixed(2);
+  });
+
   const [format, setFormat] = useState<ProductFormat | undefined>(
     initial?.format
   );
-  const [categoryId, setCategoryId] = useState(initial?.category.id ?? "");
+
+  const [categoryId, setCategoryId] = useState(
+    initial?.category.id ?? ""
+  );
+
   const [status, setStatus] = useState<ProductStatus>(
     initial?.status ?? "DRAFT"
   );
@@ -65,10 +78,14 @@ export default function ProductForm({ categories, initial, onSubmit }: Props) {
   );
 
   const [productFiles, setProductFiles] = useState<string[]>(
-    parseFileKeys(initial?.fileKey ?? null)
+    initial?.files ?? []
   );
 
   const [uploading, setUploading] = useState(false);
+
+  /* =========================
+     GUARD: cannot publish without file
+  ========================= */
 
   useEffect(() => {
     if (status === "PUBLISHED" && productFiles.length === 0) {
@@ -85,27 +102,97 @@ export default function ProductForm({ categories, initial, onSubmit }: Props) {
     });
   }
 
-  return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
+  /* =========================
+     FILE UPLOAD HANDLERS
+  ========================= */
 
-        onSubmit({
-          title,
-          description,
-          price,
-          format,
-          categoryId,
-          status,
-          fileKey:
-            productFiles.length > 0
-              ? JSON.stringify(productFiles)
-              : null,
-          previewImages,
+  async function uploadPreviewImages(files: File[]) {
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/upload/preview-image", {
+          method: "POST",
+          body: formData,
         });
-      }}
-    >
+
+        if (!res.ok) {
+          throw new Error("Preview upload failed");
+        }
+
+        const { url } = await res.json();
+        setPreviewImages((prev) => [...prev, url]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Preview image upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function uploadProductFiles(files: File[]) {
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/upload/product-file", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error("File upload failed");
+        }
+
+        const { fileKey } = await res.json();
+        setProductFiles((prev) => [...prev, fileKey]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Product file upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  /* =========================
+     SUBMIT
+  ========================= */
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const euros = Number(priceEuros);
+    if (Number.isNaN(euros) || euros < 0) {
+      alert("Invalid price");
+      return;
+    }
+
+    const priceCents = Math.round(euros * 100);
+
+    onSubmit({
+      title,
+      description,
+      price: priceCents,
+      format,
+      categoryId,
+      status,
+      files: productFiles,
+      previewImages,
+    });
+  }
+
+  /* =========================
+     RENDER
+  ========================= */
+
+  return (
+    <form className="space-y-4" onSubmit={handleSubmit}>
       <input
         className="border p-2 w-full"
         placeholder="Title"
@@ -121,14 +208,22 @@ export default function ProductForm({ categories, initial, onSubmit }: Props) {
         onChange={(e) => setDescription(e.target.value)}
       />
 
-      <input
-        className="border p-2 w-full"
-        type="number"
-        min={0}
-        step={1}
-        value={price}
-        onChange={(e) => setPrice(Number(e.target.value))}
-      />
+      <div className="space-y-1">
+        <label className="block text-sm font-medium">
+          Price (EUR)
+        </label>
+        <input
+          className="border p-2 w-full"
+          type="number"
+          min={0}
+          step="0.01"
+          inputMode="decimal"
+          placeholder="0.00"
+          value={priceEuros}
+          onChange={(e) => setPriceEuros(e.target.value)}
+          required
+        />
+      </div>
 
       <select
         className="border p-2 w-full"
@@ -147,47 +242,32 @@ export default function ProductForm({ categories, initial, onSubmit }: Props) {
       <select
         className="border p-2 w-full"
         value={status}
-        onChange={(e) => setStatus(e.target.value as ProductStatus)}
+        onChange={(e) =>
+          setStatus(e.target.value as ProductStatus)
+        }
       >
         <option value="DRAFT">Draft</option>
         <option value="PUBLISHED" disabled={productFiles.length === 0}>
           Published{" "}
-          {productFiles.length === 0 ? "(upload file first)" : ""}
+          {productFiles.length === 0
+            ? "(upload file first)"
+            : ""}
         </option>
       </select>
 
-      {/* Preview Images */}
+      {/* PREVIEW IMAGES */}
       <div className="space-y-2">
         <input
           type="file"
           multiple
           disabled={uploading}
-          onChange={async (e) => {
-            const input = e.currentTarget;
-            const files = input.files ? Array.from(input.files) : [];
+          onChange={(e) => {
+            const files = e.target.files
+              ? Array.from(e.target.files)
+              : [];
             if (!files.length) return;
-
-            input.value = "";
-            setUploading(true);
-
-            try {
-              for (const file of files) {
-                const formData = new FormData();
-                formData.append("file", file);
-
-                const res = await fetch("/api/upload/preview-image", {
-                  method: "POST",
-                  body: formData,
-                });
-
-                if (!res.ok) throw new Error();
-
-                const { url } = await res.json();
-                setPreviewImages((prev) => [...prev, url]);
-              }
-            } finally {
-              setUploading(false);
-            }
+            uploadPreviewImages(files);
+            e.target.value = "";
           }}
         />
 
@@ -198,7 +278,10 @@ export default function ProductForm({ categories, initial, onSubmit }: Props) {
                 key={img}
                 draggable
                 onDragStart={(e) =>
-                  e.dataTransfer.setData("text/plain", index.toString())
+                  e.dataTransfer.setData(
+                    "text/plain",
+                    index.toString()
+                  )
                 }
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
@@ -209,7 +292,7 @@ export default function ProductForm({ categories, initial, onSubmit }: Props) {
                 }}
                 className="relative cursor-move"
               >
-                <img src={img} className="border rounded" />
+                <img src={img} className="border rounded" alt="" />
 
                 <button
                   type="button"
@@ -228,38 +311,19 @@ export default function ProductForm({ categories, initial, onSubmit }: Props) {
         )}
       </div>
 
-      {/* Product Files */}
+      {/* PRODUCT FILES */}
       <div className="space-y-2">
         <input
           type="file"
           multiple
           disabled={uploading}
-          onChange={async (e) => {
-            const input = e.currentTarget;
-            const files = input.files ? Array.from(input.files) : [];
+          onChange={(e) => {
+            const files = e.target.files
+              ? Array.from(e.target.files)
+              : [];
             if (!files.length) return;
-
-            input.value = "";
-            setUploading(true);
-
-            try {
-              for (const file of files) {
-                const formData = new FormData();
-                formData.append("file", file);
-
-                const res = await fetch("/api/upload/product-file", {
-                  method: "POST",
-                  body: formData,
-                });
-
-                if (!res.ok) throw new Error();
-
-                const { fileKey } = await res.json();
-                setProductFiles((prev) => [...prev, fileKey]);
-              }
-            } finally {
-              setUploading(false);
-            }
+            uploadProductFiles(files);
+            e.target.value = "";
           }}
         />
 
@@ -290,8 +354,12 @@ export default function ProductForm({ categories, initial, onSubmit }: Props) {
         )}
       </div>
 
-      <button className="btn-primary" type="submit" disabled={uploading}>
-        Save
+      <button
+        className="btn-primary"
+        type="submit"
+        disabled={uploading}
+      >
+        {uploading ? "Uploading..." : "Save"}
       </button>
     </form>
   );

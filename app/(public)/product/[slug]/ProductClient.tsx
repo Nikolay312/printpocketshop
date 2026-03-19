@@ -4,8 +4,7 @@ import { Product } from "@/types/product";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductBuyPanel from "@/components/product/ProductBuyPanel";
 import ProductDescription from "@/components/product/ProductDescription";
-import ProductTrustBadges from "@/components/product/ProductTrustBadges";
-import WhatsIncluded from "@/components/product/WhatsIncluded";
+import { motion } from "framer-motion";
 
 type Props = {
   product: Product;
@@ -13,44 +12,54 @@ type Props = {
 
 export default function ProductClient({ product }: Props) {
   return (
-    <main className="container-app py-12">
-      <div className="grid grid-cols-1 gap-14 lg:grid-cols-[1.45fr_1fr]">
-        {/* LEFT — Product content */}
-        <section className="space-y-14">
-          {/* Gallery */}
+    <motion.main
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="mx-auto max-w-[1240px] px-6 pt-32 pb-40"
+    >
+      {/* ===== HERO TITLE (Integrated, No Borders) ===== */}
+      <div className="max-w-4xl mb-24">
+        <h1
+          className="
+            text-[3rem]
+            md:text-[4.25rem]
+            font-semibold
+            tracking-[-0.025em]
+            leading-[1.02]
+            text-neutral-900
+          "
+        >
+          {product.title}
+        </h1>
+      </div>
+
+      {/* ===== MAIN GRID ===== */}
+      <div className="grid grid-cols-1 gap-24 lg:grid-cols-[minmax(0,1.3fr)_minmax(420px,0.7fr)]">
+        
+        {/* LEFT COLUMN */}
+        <section className="space-y-32">
           <ProductGallery
             images={product.previewImages}
             title={product.title}
           />
 
-          {/* Description */}
-          <div className="space-y-6">
+          <div className="max-w-2xl">
             <ProductDescription product={product} />
-          </div>
-
-          {/* What's included */}
-          <div className="space-y-6">
-            <WhatsIncluded product={product} />
-          </div>
-
-          {/* Trust */}
-          <div className="pt-2">
-            <ProductTrustBadges />
           </div>
         </section>
 
-        {/* RIGHT — Buy panel */}
-        <aside className="lg:sticky lg:top-24 h-fit">
-          <div className="space-y-4">
+        {/* RIGHT COLUMN */}
+        <aside className="lg:sticky lg:top-36 h-fit">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
             <ProductBuyPanel product={product} />
-
-            {/* Secondary reassurance */}
-            <p className="text-center text-xs text-muted">
-              Secure checkout • Instant download • Lifetime access
-            </p>
-          </div>
+          </motion.div>
         </aside>
       </div>
-    </main>
+    </motion.main>
   );
 }

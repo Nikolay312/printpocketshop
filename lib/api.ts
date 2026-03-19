@@ -9,7 +9,6 @@ import { notFound } from "next/navigation";
    PRODUCTS (SERVER)
 ========================= */
 
-// ❌ Admin should NOT use this for drafts
 // ✅ Public-safe: only PUBLISHED products
 export const getAllProducts = async (): Promise<Product[]> => {
   const products = await prisma.product.findMany({
@@ -18,6 +17,9 @@ export const getAllProducts = async (): Promise<Product[]> => {
     },
     include: {
       category: true,
+      previewImages: {
+        orderBy: { order: "asc" },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -33,6 +35,9 @@ export const getProductById = async (
     where: { id },
     include: {
       category: true,
+      previewImages: {
+        orderBy: { order: "asc" },
+      },
     },
   });
 
@@ -53,6 +58,9 @@ export const getProductBySlug = async (
     },
     include: {
       category: true,
+      previewImages: {
+        orderBy: { order: "asc" },
+      },
     },
   });
 
@@ -73,13 +81,13 @@ export const getAllCategories = async () => {
     orderBy: { name: "asc" },
   });
 
-  // ✅ Frontend-safe DTOs
   return categories.map((c) => ({
     id: c.id,
     name: c.name,
     slug: c.slug,
   }));
 };
+
 
 /* =========================
    SHOP (SERVER)
@@ -97,6 +105,9 @@ export const getProductsForShop = async (
     },
     include: {
       category: true,
+      previewImages: {
+        orderBy: { order: "asc" },
+      },
     },
     orderBy: { createdAt: "desc" },
   });

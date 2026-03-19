@@ -2,13 +2,14 @@ import type { Product } from "@/types/product";
 import type {
   Product as DbProduct,
   Category,
+  ProductFile,
+  ProductImage,
 } from "@prisma/client";
 
 /* =========================
    INTERNAL DB SHAPES
 ========================= */
 
-// Minimal tag shape (Prisma-safe)
 type DbTag = {
   name: string;
 };
@@ -16,16 +17,9 @@ type DbTag = {
 type DbProductWithRelations = DbProduct & {
   category: Category;
   tags?: DbTag[];
+  files?: ProductFile[];
+  previewImages?: ProductImage[];
 };
-
-/* =========================
-   HELPERS
-========================= */
-
-function normalizePreviewImages(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((v): v is string => typeof v === "string");
-}
 
 /* =========================
    MAPPER
@@ -40,11 +34,16 @@ export function mapDbProductToProduct(
     slug: p.slug,
     description: p.description,
 
-    previewImages: normalizePreviewImages(p.previewImages),
+    // ✅ FIXED: relational preview images
+    previewImages:
+      p.previewImages?.map((img) => img.fileKey) ?? [],
 
-    fileUrl: p.fileKey
-      ? `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${p.fileKey}`
-      : undefined,
+    // ✅ multi-file support
+    files:
+      p.files?.map((f) => ({
+        id: f.id,
+        label: f.label ?? null,
+      })) ?? [],
 
     price: p.price,
     currency: p.currency,

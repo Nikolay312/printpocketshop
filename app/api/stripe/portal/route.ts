@@ -4,49 +4,102 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth.server";
+import { redis } from "@/lib/redis";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecret) {
+  throw new Error("STRIPE_SECRET_KEY is not set");
+}
+
+const stripe = new Stripe(stripeSecret);
 
 export async function POST() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) {
-    return NextResponse.json({ error: "Missing NEXT_PUBLIC_APP_URL" }, { status: 500 });
-  }
+  try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      return NextResponse.redirect(
+        new URL("/account/profile", process.env.NEXT_PUBLIC_APP_URL)
+      );
+    }
 
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    /* =========================
+       AUTH
+    ========================= */
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true, stripeCustomerId: true },
-  });
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.redirect(new URL("/login", appUrl));
+    }
 
-  if (!user?.email) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+    /* =========================
+       RATE LIMIT (Redis)
+    ========================= */
 
-  let customerId = user.stripeCustomerId;
+    const rateKey = `portal:${userId}`;
+    const attempts = await redis.incr(rateKey);
 
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      metadata: { userId },
-    });
+    if (attempts === 1) {
+      await redis.expire(rateKey, 60);
+    }
 
-    await prisma.user.update({
+    if (attempts > 5) {
+      return NextResponse.redirect(
+        new URL("/account/profile?error=rate_limited", appUrl)
+      );
+    }
+
+    /* =========================
+       USER LOOKUP
+    ========================= */
+
+    const user = await prisma.user.findUnique({
       where: { id: userId },
-      data: { stripeCustomerId: customer.id },
+      select: { email: true, stripeCustomerId: true },
     });
 
-    customerId = customer.id;
+    if (!user?.email) {
+      return NextResponse.redirect(new URL("/account/profile", appUrl));
+    }
+
+    let customerId = user.stripeCustomerId;
+
+    /* =========================
+       ENSURE STRIPE CUSTOMER
+    ========================= */
+
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { userId },
+      });
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { stripeCustomerId: customer.id },
+      });
+
+      customerId = customer.id;
+    }
+
+    /* =========================
+       CREATE PORTAL SESSION
+    ========================= */
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${appUrl}/account/profile`,
+    });
+
+    /* =========================
+       REDIRECT TO STRIPE
+    ========================= */
+
+    return NextResponse.redirect(session.url!, { status: 303 });
+  } catch (err) {
+    console.error("Stripe portal error:", err);
+
+    return NextResponse.redirect(
+      new URL("/account/profile?error=portal_failed", process.env.NEXT_PUBLIC_APP_URL!)
+    );
   }
-
-  const session = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${appUrl}/account/orders`,
-  });
-
-  return NextResponse.json({ url: session.url });
 }

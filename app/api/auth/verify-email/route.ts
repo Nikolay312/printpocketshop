@@ -16,7 +16,6 @@ export async function POST(req: Request) {
 
   const verificationToken = await prisma.emailVerificationToken.findUnique({
     where: { token },
-    include: { user: true },
   });
 
   if (

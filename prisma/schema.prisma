@@ -6,24 +6,38 @@ datasource db {
   provider = "postgresql"
 }
 
+/**
+ * =========================
+ * CORE MODELS
+ * =========================
+ */
+
 model User {
-  id               String   @id @default(cuid())
-  email            String   @unique
-  name             String?
-  password         String
-  role             Role     @default(USER)
+  id       String  @id @default(cuid())
+  email    String  @unique
+  name     String?
+  country  String?
+  password String
+  role     Role    @default(USER)
 
-  stripeCustomerId String?  @unique
+  stripeCustomerId String? @unique
 
-  orders             Order[]
+  orders          Order[]
+  licenseUpgrades LicenseUpgrade[]
+  invoices        Invoice[]
+  cart            Cart?
+
   passwordResets     PasswordResetToken[]
   emailVerifications EmailVerificationToken[]
+  discountUsages     DiscountUsage[]
 
-  emailVerified Boolean @default(false)
+  productUpdatesEmail Boolean @default(true)
 
-  createdAt DateTime @default(now())
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
 }
-
 model Product {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
@@ -40,8 +54,8 @@ model Product {
 
   status ProductStatus @default(DRAFT)
 
-  fileKey       String?
-  previewImages Json
+  files         ProductFile[]
+  previewImages ProductImage[]
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -49,6 +63,38 @@ model Product {
   sales Int @default(0)
 
   orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([categoryId])
+  @@index([isFeatured])
+}
+
+model ProductFile {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  fileKey   String
+  label     String?
+  sizeBytes Int?
+  checksum  String?
+
+  @@index([productId])
+}
+
+model ProductImage {
+  id        String @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  fileKey String
+  order   Int
+
+  @@index([productId, order])
 }
 
 model Category {
@@ -56,22 +102,150 @@ model Category {
   name     String
   slug     String    @unique
   products Product[]
+
+  @@index([name])
 }
 
+/**
+ * =========================
+ * DISCOUNT CODES
+ * =========================
+ */
+
+model DiscountCode {
+  id   String @id @default(cuid())
+  code String @unique
+
+  isActive Boolean @default(true)
+
+  discountType DiscountType
+  percentOff   Int?
+  amountOff    Int?
+
+  currency Currency?
+
+  minSubtotal Int?
+
+  maxUses      Int?
+  usedCount    Int      @default(0)
+  perUserLimit Int?
+
+  startsAt  DateTime?
+  expiresAt DateTime?
+
+  carts  Cart[]
+  orders Order[]
+  usages DiscountUsage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+  @@index([startsAt])
+  @@index([expiresAt])
+}
+
+model DiscountUsage {
+  id String @id @default(cuid())
+
+  discountCodeId String
+  userId         String
+  orderId        String? @unique
+
+  discountCode DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order        Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  amount Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([discountCodeId])
+  @@index([userId])
+  @@unique([discountCodeId, userId, id])
+}
+
+/**
+ * =========================
+ * CART
+ * =========================
+ */
+
+model Cart {
+  id     String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items CartItem[]
+
+  discountCodeId String?
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([discountCodeId])
+}
+
+model CartItem {
+  id String @id @default(cuid())
+
+  cartId    String
+  productId String
+
+  quantity Int @default(1)
+  license  ProductLicense @default(PERSONAL)
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([cartId, productId, license])
+  @@index([cartId])
+  @@index([productId])
+}
+
+/**
+ * =========================
+ * ORDERS
+ * =========================
+ */
+
 model Order {
-  id                    String   @id @default(cuid())
-  stripeSessionId       String   @unique
-  stripePaymentIntentId String?
-  status                OrderStatus
+  id                    String      @id @default(cuid())
+  stripeSessionId       String      @unique
+  stripePaymentIntentId String?     @unique
+  status                OrderStatus @default(PENDING)
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subtotal       Int?
+  discountAmount Int      @default(0)
+
+  discountCodeId String?
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
 
   total    Int
   currency Currency
 
-  items     OrderItem[]
+  items   OrderItem[]
+  invoice Invoice?
+
+  discountUsage DiscountUsage?
+
+  auditLogs FinancialAuditLog[] @relation("OrderAuditLogs")
+
   createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([stripePaymentIntentId])
+  @@index([discountCodeId])
 }
 
 model OrderItem {
@@ -81,10 +255,178 @@ model OrderItem {
 
   price    Int
   quantity Int
+  license  ProductLicense @default(PERSONAL)
 
-  order   Order   @relation(fields: [orderId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
+
+  licenseUpgrades LicenseUpgrade[]
+
+  @@unique([orderId, productId, license])
+  @@index([productId])
+  @@index([orderId])
+  @@index([productId, orderId])
 }
+
+/**
+ * =========================
+ * LICENSE UPGRADES
+ * =========================
+ */
+
+model LicenseUpgrade {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  fromLicense ProductLicense
+  toLicense   ProductLicense
+
+  currency       Currency
+  deltaCents     Int
+  fromPriceCents Int
+  toPriceCents   Int
+
+  status LicenseUpgradeStatus @default(PENDING)
+
+  stripeCheckoutSessionId String? @unique
+  stripePaymentIntentId   String? @unique
+  stripeCustomerId        String?
+
+  invoice Invoice?
+
+  auditLogs FinancialAuditLog[] @relation("UpgradeAuditLogs")
+
+  createdAt  DateTime  @default(now())
+  paidAt     DateTime?
+  refundedAt DateTime?
+  expiredAt  DateTime?
+
+  @@index([userId, createdAt])
+  @@index([orderItemId, status])
+  @@index([status, createdAt])
+}
+
+/**
+ * =========================
+ * INVOICES (ACCOUNTING LEDGER)
+ * =========================
+ */
+
+model Invoice {
+  id String @id @default(cuid())
+
+  invoiceNumber Int      @unique
+  issuedAt      DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orderId          String? @unique
+  licenseUpgradeId String? @unique
+
+  order          Order?          @relation(fields: [orderId], references: [id])
+  licenseUpgrade LicenseUpgrade? @relation(fields: [licenseUpgradeId], references: [id])
+
+  auditLogs FinancialAuditLog[] @relation("InvoiceAuditLogs")
+
+  currency Currency
+
+  netAmount   Int
+  vatAmount   Int
+  grossAmount Int
+
+  vatRate    Float
+  vatCountry String
+  vatApplied Boolean
+
+  buyerName      String
+  buyerEmail     String
+  buyerCountry   String
+  buyerAddress   String?
+  buyerVatNumber String?
+
+  sellerName      String
+  sellerCountry   String
+  sellerVatNumber String?
+
+  pdfUrl String?
+
+  refundedAt DateTime?
+
+  @@index([userId])
+  @@index([issuedAt])
+}
+
+/**
+ * =========================
+ * FINANCIAL AUDIT LOG
+ * =========================
+ */
+
+model FinancialAuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  actorType AuditActorType @default(SYSTEM)
+  actorId   String?
+
+  level     AuditLevel @default(INFO)
+  eventType String
+
+  orderId          String?
+  invoiceId        String?
+  licenseUpgradeId String?
+
+  order          Order?          @relation("OrderAuditLogs", fields: [orderId], references: [id], onDelete: SetNull)
+  invoice        Invoice?        @relation("InvoiceAuditLogs", fields: [invoiceId], references: [id], onDelete: SetNull)
+  licenseUpgrade LicenseUpgrade? @relation("UpgradeAuditLogs", fields: [licenseUpgradeId], references: [id], onDelete: SetNull)
+
+  entityType AuditEntityType?
+  entityId   String?
+
+  stripeEventId  String?
+  stripeObjectId String?
+
+  amountCents Int?
+  currency    Currency?
+
+  metadata Json?
+
+  @@index([createdAt])
+  @@index([eventType])
+  @@index([eventType, createdAt])
+  @@index([entityType, entityId])
+  @@index([orderId, createdAt])
+  @@index([invoiceId, createdAt])
+  @@index([licenseUpgradeId, createdAt])
+  @@index([stripeEventId])
+  @@index([stripeObjectId])
+}
+
+/**
+ * =========================
+ * STRIPE IDEMPOTENCY
+ * =========================
+ */
+
+model ProcessedStripeEvent {
+  id        String   @id
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/**
+ * =========================
+ * AUTH TOKENS
+ * =========================
+ */
 
 model EmailVerificationToken {
   id        String   @id @default(cuid())
@@ -96,6 +438,9 @@ model EmailVerificationToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model PasswordResetToken {
@@ -108,11 +453,16 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
-/* =========================
-   ENUMS
-========================= */
+/**
+ * =========================
+ * ENUMS
+ * =========================
+ */
 
 enum Role {
   USER
@@ -143,6 +493,43 @@ enum ProductStatus {
 }
 
 enum OrderStatus {
+  PENDING
   PAID
   REFUNDED
+  EXPIRED
+}
+
+enum LicenseUpgradeStatus {
+  PENDING
+  PAID
+  REFUNDED
+  EXPIRED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum AuditActorType {
+  SYSTEM
+  USER
+  ADMIN
+}
+
+enum AuditLevel {
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+
+enum AuditEntityType {
+  ORDER
+  INVOICE
+  LICENSE_UPGRADE
+  STRIPE_EVENT
+  PORTAL_SESSION
+  EMAIL
+  REFUND
 }

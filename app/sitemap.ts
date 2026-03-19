@@ -2,28 +2,79 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+const BASE_URL = "https://printpocketshop.com";
 
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product.findMany({
     select: {
-      slug: true,
-    },
+      slug: true,    },
   });
 
+  const now = new Date();
+
   return [
+    // Core pages
     {
-      url: baseUrl,
+      url: `${BASE_URL}`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${baseUrl}/shop`,
+      url: `${BASE_URL}/shop`,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
     },
+
+    // Authority pages
+    {
+      url: `${BASE_URL}/about`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/faq`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/license`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/contact`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/policies/privacy`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/policies/refund`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/policies/terms`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.6,
+    },
+
+    // Products
     ...products.map((product) => ({
-      url: `${baseUrl}/product/${product.slug}`,
+      url: `${BASE_URL}/product/${product.slug}`,
+      lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),

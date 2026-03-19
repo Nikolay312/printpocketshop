@@ -21,14 +21,8 @@ function slugify(value: string): string {
     .replace(/\s+/g, "-");
 }
 
-function hasAtLeastOneFile(fileKey: string | null): boolean {
-  if (!fileKey) return false;
-  try {
-    const parsed = JSON.parse(fileKey);
-    return Array.isArray(parsed) ? parsed.length > 0 : true;
-  } catch {
-    return true;
-  }
+function hasAtLeastOneFile(files: string[]): boolean {
+  return files.length > 0;
 }
 
 /* =========================
@@ -42,14 +36,14 @@ export async function createAdminProduct(input: {
   format?: ProductFormat;
   categoryId: string;
   status: ProductStatus;
-  fileKey: string | null;
+  files: string[];
   previewImages: string[];
 }) {
   await requireAdminUser();
 
   if (
     input.status === ProductStatus.PUBLISHED &&
-    !hasAtLeastOneFile(input.fileKey)
+    !hasAtLeastOneFile(input.files)
   ) {
     throw new Error("Product file is required before publishing");
   }
@@ -70,19 +64,28 @@ export async function createAdminProduct(input: {
       title: input.title,
       slug,
       description: input.description ?? "",
-
       price: input.price,
       currency: Currency.EUR,
-
       format: input.format ?? ProductFormat.PDF,
       license: ProductLicense.PERSONAL,
-
       status: input.status,
-
-      previewImages: input.previewImages,
-      fileKey: input.fileKey,
-
       categoryId: input.categoryId,
+
+      // RELATIONAL PREVIEW IMAGES
+      previewImages: {
+        create: input.previewImages.map((fileKey, index) => ({
+          fileKey,
+          order: index,
+        })),
+      },
+
+      // RELATIONAL PRODUCT FILES
+      files: {
+        create: input.files.map((key) => ({
+          fileKey: key,
+          label: null,
+        })),
+      },
     },
   });
 
@@ -101,14 +104,14 @@ export async function updateAdminProduct(input: {
   format?: ProductFormat;
   categoryId: string;
   status: ProductStatus;
-  fileKey: string | null;
+  files: string[];
   previewImages: string[];
 }) {
   await requireAdminUser();
 
   if (
     input.status === ProductStatus.PUBLISHED &&
-    !hasAtLeastOneFile(input.fileKey)
+    !hasAtLeastOneFile(input.files)
   ) {
     throw new Error("Product file is required before publishing");
   }
@@ -119,11 +122,52 @@ export async function updateAdminProduct(input: {
       title: input.title,
       description: input.description,
       price: input.price,
+      currency: Currency.EUR,
       format: input.format,
       categoryId: input.categoryId,
       status: input.status,
-      fileKey: input.fileKey,
-      previewImages: input.previewImages,
+
+      // Replace preview images
+      previewImages: {
+        deleteMany: {},
+        create: input.previewImages.map((fileKey, index) => ({
+          fileKey,
+          order: index,
+        })),
+      },
+
+      // Replace files
+      files: {
+        deleteMany: {},
+        create: input.files.map((key) => ({
+          fileKey: key,
+          label: null,
+        })),
+      },
+    },
+  });
+}
+
+/* =========================
+   FEATURED TOGGLE
+========================= */
+
+export async function toggleAdminProductFeatured(productId: string) {
+  await requireAdminUser();
+
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { isFeatured: true },
+  });
+
+  if (!product) {
+    throw new Error("Product not found");
+  }
+
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      isFeatured: !product.isFeatured,
     },
   });
 }

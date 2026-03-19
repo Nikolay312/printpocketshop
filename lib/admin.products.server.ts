@@ -85,8 +85,24 @@ export async function getAdminProductById(id: string) {
       price: true,
       format: true,
       status: true,
-      fileKey: true,
-      previewImages: true,
+
+      files: {
+        select: {
+          id: true,
+          fileKey: true,
+          label: true,
+        },
+      },
+
+      previewImages: {
+        orderBy: { order: "asc" },
+        select: {
+          id: true,
+          fileKey: true,
+          order: true,
+        },
+      },
+
       category: {
         select: {
           id: true,
@@ -102,11 +118,10 @@ export async function getAdminProductById(id: string) {
   return {
     ...product,
 
-    // ✅ normalize Json → string[]
-    previewImages: Array.isArray(product.previewImages)
-      ? product.previewImages.filter(
-          (v): v is string => typeof v === "string"
-        )
-      : [],
+    // Convert relation → string[] for ProductForm
+    previewImages: product.previewImages.map((img) => img.fileKey),
+
+    // Convert files relation → string[] for ProductForm
+    files: product.files.map((file) => file.fileKey),
   };
 }

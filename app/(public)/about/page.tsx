@@ -1,118 +1,266 @@
 export default function AboutPage() {
   return (
-    <main>
+    <main className="relative overflow-hidden bg-background text-foreground">
+      {/* BACKGROUND */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
+        <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute top-1/4 -right-24 h-80 w-80 rounded-full bg-sky-400/10 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+      </div>
+
       {/* HERO */}
-      <section className="container-app py-28 text-center">
-        <div className="mx-auto max-w-3xl space-y-6">
-          <h1 className="text-4xl font-semibold tracking-tight">
-            About PrintPocketShop
-          </h1>
+      <section className="relative px-6 pb-24 pt-32 sm:pb-28 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+            <div className="space-y-8">
+              <div className="space-y-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                  About PrintPocketShop
+                </p>
 
-          <p className="text-lg text-muted leading-relaxed">
-            PrintPocketShop is a curated marketplace for premium digital
-            templates — designed to save time, elevate your work, and help
-            you present yourself professionally.
-          </p>
-        </div>
-      </section>
+                <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                  Thoughtfully crafted digital templates for clear, modern work.
+                </h1>
+              </div>
 
-      {/* MISSION */}
-      <section className="bg-surface">
-        <div className="container-app py-24 text-center">
-          <div className="mx-auto max-w-4xl space-y-6">
-            <h2 className="text-2xl font-semibold">
-              Our mission
-            </h2>
+              <p className="max-w-3xl text-base leading-8 text-muted sm:text-lg">
+                PrintPocketShop is a digital template studio focused on clean
+                structure, practical usability, and polished presentation. We
+                create products that help individuals, teams, and businesses
+                communicate more clearly through layouts that feel refined,
+                usable, and intentionally designed.
+              </p>
 
-            <p className="text-muted leading-relaxed">
-              We created PrintPocketShop to make high-quality digital
-              templates accessible and practical. From professionals and
-              small businesses to students and creatives, our goal is to
-              provide designs that are easy to use, affordable, and ready
-              the moment you need them.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* VALUES */}
-      <section className="container-app py-24">
-        <div className="space-y-16">
-          <div className="text-center space-y-3">
-            <h2 className="text-2xl font-semibold">
-              What sets us apart
-            </h2>
-            <p className="text-muted">
-              Thoughtfully designed products you can rely on
-            </p>
-          </div>
-
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="card p-8">
-              <h3 className="font-semibold">
-                Professional quality
-              </h3>
-              <p className="mt-3 text-sm text-muted leading-relaxed">
-                Every product is crafted with attention to layout,
-                typography, and usability — so your final result always
-                looks polished and intentional.
+              <p className="max-w-3xl text-base leading-8 text-muted">
+                Rather than producing generic files built around short-lived
+                trends, we concentrate on fundamentals: hierarchy, spacing,
+                readability, balance, and workflow. The goal is simple — to
+                make digital products that look professional, feel reliable,
+                and remain useful long after first download.
               </p>
             </div>
 
-            <div className="card p-8">
-              <h3 className="font-semibold">
-                Instant access
-              </h3>
-              <p className="mt-3 text-sm text-muted leading-relaxed">
-                All products are digital and available immediately after
-                purchase, with lifetime access through your account.
-              </p>
-            </div>
+            <div className="rounded-[32px] border border-white/10 bg-white/[0.05] p-8 shadow-[0_25px_80px_rgba(0,0,0,0.14)] backdrop-blur-2xl">
+              <div className="space-y-8">
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    What we focus on
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-muted">
+                    Clear systems, elegant structure, and templates that are
+                    actually useful in real workflows.
+                  </p>
+                </div>
 
-            <div className="card p-8">
-              <h3 className="font-semibold">
-                Designed for real use
-              </h3>
-              <p className="mt-3 text-sm text-muted leading-relaxed">
-                Our templates are made for real-world needs — easy to
-                customize, compatible with modern tools, and ready to use
-                without friction.
-              </p>
+                <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-sm font-semibold text-foreground">
+                      Clarity
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted">
+                      Easy to read, easy to use, easy to trust.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-sm font-semibold text-foreground">
+                      Structure
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted">
+                      Layout systems built with consistency and intent.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-sm font-semibold text-foreground">
+                      Usability
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted">
+                      Practical files designed for real-world application.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* AUDIENCE */}
-      <section className="bg-surface">
-        <div className="container-app py-24 text-center">
-          <div className="mx-auto max-w-4xl space-y-6">
-            <h2 className="text-2xl font-semibold">
-              Who PrintPocketShop is for
-            </h2>
+      {/* INTRO / STORY */}
+      <section className="relative px-6 py-24 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                Our approach
+              </p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                Designed with purpose, not decoration.
+              </h2>
+            </div>
 
-            <p className="text-muted leading-relaxed">
-              Whether you’re preparing a resume, running a small business,
-              planning an event, or organizing your life, PrintPocketShop
-              provides practical, well-designed templates that help you get
-              things done faster — without compromising quality.
+            <div className="space-y-6 text-base leading-8 text-muted">
+              <p>
+                At PrintPocketShop, design is not treated as surface styling.
+                It is treated as structure — the invisible framework that makes
+                information clearer, layouts more useful, and finished work more
+                confident. Every template begins with organization first:
+                spacing, alignment, visual rhythm, and hierarchy.
+              </p>
+
+              <p>
+                This means our products are built to support practical outcomes,
+                not just visual appeal. Whether a template is being used for a
+                client-facing document, internal workflow, branding material, or
+                personal organization, it should feel calm, coherent, and easy
+                to work with.
+              </p>
+
+              <p>
+                We believe good digital products should reduce friction. They
+                should help people start faster, present better, and avoid the
+                clutter that often comes from overdesigned or inconsistent
+                templates. That philosophy shapes everything we make.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PRINCIPLES */}
+      <section className="relative border-y border-white/10 bg-white/[0.03] px-6 py-24 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              Design principles
             </p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              The standards behind every product.
+            </h2>
+            <p className="mt-5 text-base leading-8 text-muted">
+              Every template follows the same core principles so the final
+              result feels considered, useful, and professionally composed.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.10)] backdrop-blur-xl">
+              <h3 className="text-lg font-semibold text-foreground">
+                Structured layouts
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-muted">
+                Grids, spacing systems, and content hierarchy are built with
+                discipline so information feels organized rather than crowded.
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.10)] backdrop-blur-xl">
+              <h3 className="text-lg font-semibold text-foreground">
+                Practical usability
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-muted">
+                Products are created for actual use, with an emphasis on
+                simplicity, editability, and efficient adaptation.
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.10)] backdrop-blur-xl">
+              <h3 className="text-lg font-semibold text-foreground">
+                Timeless presentation
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-muted">
+                We prefer lasting clarity over temporary trends, so designs stay
+                relevant and professional over time.
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.10)] backdrop-blur-xl">
+              <h3 className="text-lg font-semibold text-foreground">
+                Consistent quality
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-muted">
+                Every product is developed with the same attention to visual
+                balance, readability, and dependable customer use.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* WHO IT'S FOR */}
+      <section className="relative px-6 py-24 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+            <div className="rounded-[32px] border border-white/10 bg-white/[0.05] p-8 shadow-[0_25px_80px_rgba(0,0,0,0.14)] backdrop-blur-2xl sm:p-10">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                Built for
+              </p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                People who care how their work is presented.
+              </h2>
+              <p className="mt-5 text-base leading-8 text-muted">
+                Our templates are built for professionals, creators, small
+                businesses, organized individuals, and anyone who wants their
+                materials to feel clean, coherent, and well considered.
+              </p>
+            </div>
+
+            <div className="space-y-8">
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+                <h3 className="text-lg font-semibold text-foreground">
+                  For professionals
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-muted">
+                  Templates that support polished communication, credible
+                  presentation, and efficient day-to-day work.
+                </p>
+              </div>
+
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+                <h3 className="text-lg font-semibold text-foreground">
+                  For client work
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-muted">
+                  Layouts designed to help deliver material that feels elevated,
+                  trustworthy, and professionally structured.
+                </p>
+              </div>
+
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+                <h3 className="text-lg font-semibold text-foreground">
+                  For personal organization
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-muted">
+                  Useful files that bring order and visual clarity to planning,
+                  documentation, and everyday systems.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CLOSING */}
-      <section className="container-app py-24 text-center">
-        <div className="mx-auto max-w-3xl space-y-6">
-          <h2 className="text-2xl font-semibold">
-            Designed to make your work easier
-          </h2>
+      <section className="relative px-6 pb-28 pt-6 lg:px-8">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="rounded-[36px] border border-white/10 bg-white/[0.05] px-8 py-12 shadow-[0_25px_80px_rgba(0,0,0,0.14)] backdrop-blur-2xl sm:px-12 sm:py-14">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              Final note
+            </p>
 
-          <p className="text-muted leading-relaxed">
-            PrintPocketShop is built around one simple idea: great design
-            should work for you. Explore our collection and discover digital
-            templates that are ready when you are.
-          </p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              Built for clarity, made to be used.
+            </h2>
+
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-muted">
+              PrintPocketShop exists to create digital products that feel more
+              refined than ordinary templates and more usable than purely
+              decorative assets. We design for people who value order,
+              readability, and confident presentation — because the best
+              templates do not compete with your content, they support it.
+            </p>
+          </div>
         </div>
       </section>
     </main>

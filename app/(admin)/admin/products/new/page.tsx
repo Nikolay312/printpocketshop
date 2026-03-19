@@ -1,31 +1,25 @@
 import { getAdminCategories } from "@/lib/admin.products.server";
 import { createAdminProduct } from "@/lib/admin.products.actions";
-import ProductForm from "@/components/admin/ProductForm";
+import ProductForm, {
+  type AdminProductFormData,
+} from "@/components/admin/ProductForm";
 import { redirect } from "next/navigation";
-import type { ProductFormat, ProductStatus } from "@prisma/client";
-
-type FormData = {
-  title: string;
-  price: number;
-  format?: ProductFormat;
-  categoryId: string;
-  status: ProductStatus;
-  fileKey: string | null;
-};
 
 export default async function NewProductPage() {
   const categories = await getAdminCategories();
 
-  async function handleCreateProduct(data: FormData) {
+  async function handleCreateProduct(data: AdminProductFormData) {
     "use server";
 
     await createAdminProduct({
       title: data.title,
+      description: data.description,
       price: data.price,
       format: data.format,
       categoryId: data.categoryId,
       status: data.status,
-      fileKey: data.fileKey,
+      files: data.files, // ✅ FIXED
+      previewImages: data.previewImages ?? [],
     });
 
     redirect("/admin/products");

@@ -11,126 +11,114 @@ export default function Footer() {
     Promise.resolve(isAuthenticated()).then(setLoggedIn);
   }, []);
 
+  const linkClass =
+    "text-[var(--muted)] transition-[color] duration-200 ease-[var(--ease-out)] hover:text-[var(--fg)]";
+
   return (
-    <footer className="border-t border-border bg-background">
-      <div className="container-app py-16">
-        <div className="grid gap-10 md:grid-cols-4">
+    <footer className="border-t border-[var(--border)] bg-[var(--bg)]">
+      <div className="container-app py-32">
+
+        {/* ================= Top Grid ================= */}
+        <div className="grid gap-20 md:grid-cols-4">
+
           {/* Brand */}
-          <div className="space-y-3">
-            <div className="text-base font-semibold tracking-tight text-foreground">
-              PrintPocket<span className="text-muted">Shop</span>
+          <div className="space-y-6">
+            <div className="text-lg font-semibold tracking-tight text-[var(--fg)]">
+              PrintPocket<span className="text-[var(--muted)]">Shop</span>
             </div>
 
-            <p className="text-sm leading-relaxed text-muted">
-              Premium digital templates and printables.
-              <br />
-              Instant downloads. Lifetime access.
+            <p className="max-w-xs text-sm leading-relaxed text-[var(--muted)]">
+              A refined digital template studio focused on clarity,
+              structure, and long-term usability.
             </p>
           </div>
 
-          {/* Shop */}
-          <div className="space-y-3">
-            <div className="text-sm font-semibold text-foreground">
-              Shop
+          {/* Studio */}
+          <div className="space-y-6">
+            <div className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+              Studio
             </div>
 
-            <nav className="flex flex-col gap-2 text-sm text-muted">
-              <Link
-                href="/shop"
-                className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-              >
-                All products
+            <nav className="flex flex-col gap-4 text-sm">
+              <Link href="/about" className={linkClass}>
+                About
               </Link>
 
-              <Link
-                href="/cart"
-                className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-              >
-                Cart
+              <Link href="/license" className={linkClass}>
+                License
+              </Link>
+
+              <Link href="/faq" className={linkClass}>
+                FAQ
+              </Link>
+
+              <Link href="/contact" className={linkClass}>
+                Contact
               </Link>
             </nav>
           </div>
 
-          {/* Account */}
-          <div className="space-y-3">
-            <div className="text-sm font-semibold text-foreground">
-              Account
+          {/* Shop */}
+          <div className="space-y-6">
+            <div className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+              Shop
             </div>
 
-            <nav className="flex flex-col gap-2 text-sm text-muted">
-              <Link
-                href="/account/orders"
-                className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-              >
-                Orders
+            <nav className="flex flex-col gap-4 text-sm">
+              <Link href="/shop" className={linkClass}>
+                All Templates
               </Link>
 
-              <Link
-                href="/account/downloads"
-                className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-              >
-                Downloads
-              </Link>
+              {loggedIn && (
+                <>
+                  <Link href="/account/orders" className={linkClass}>
+                    Orders
+                  </Link>
 
-              {!loggedIn && (
-                <Link
-                  href="/login"
-                  className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-                >
-                  Login
-                </Link>
+                  <Link href="/account/downloads" className={linkClass}>
+                    Downloads
+                  </Link>
+                </>
               )}
             </nav>
           </div>
 
-          {/* Support */}
-          <div className="space-y-3">
-            <div className="text-sm font-semibold text-foreground">
-              Support
+          {/* Legal */}
+          <div className="space-y-6">
+            <div className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+              Legal
             </div>
 
-            <nav className="flex flex-col gap-2 text-sm text-muted">
-              <Link
-                href="/contact"
-                className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-              >
-                Contact
-              </Link>
-
-              <Link
-                href="/faq"
-                className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-              >
-                FAQ
-              </Link>
-
-              <Link
-                href="/policies/terms"
-                className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-              >
+            <nav className="flex flex-col gap-4 text-sm">
+              <Link href="/policies/terms" className={linkClass}>
                 Terms
               </Link>
 
-              <Link
-                href="/policies/privacy"
-                className="transition hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--ring)]"
-              >
+              <Link href="/policies/privacy" className={linkClass}>
                 Privacy
+              </Link>
+
+              <Link href="/policies/refund" className={linkClass}>
+                Refund Policy
               </Link>
             </nav>
           </div>
+
         </div>
 
-        {/* Bottom */}
-        <div className="mt-14 flex flex-col gap-2 border-t border-border pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            © {new Date().getFullYear()} PrintPocketShop
-          </span>
+        {/* ================= Bottom Bar ================= */}
+        <div className="mt-24 border-t border-[var(--border)] pt-10">
+          <div className="flex flex-col gap-6 text-xs text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              © {new Date().getFullYear()} PrintPocketShop
+            </span>
 
-          <span>
-            Secure checkout · Instant digital delivery
-          </span>
+            <span>
+              Structured digital templates for professional use.
+            </span>
+          </div>
         </div>
+
       </div>
     </footer>
   );

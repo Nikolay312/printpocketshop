@@ -1,39 +1,73 @@
-import { Product } from "@/types/product";
+"use client";
 
-interface Props {
+import type { Product } from "@/types/product";
+
+type Props = {
   product: Product;
-}
+};
 
 export default function ProductDescription({ product }: Props) {
+  const description = product.description ?? "";
+
+  const lines = description
+    .split("\n")
+    .map((line) => line.replace(/\r/g, ""));
+
+  const firstContentIndex = lines.findIndex(
+    (line) => line.trim() !== ""
+  );
+
   return (
-    <section className="space-y-5">
-      <h2 className="text-lg font-semibold">
-        Product description
-      </h2>
+    <section className="space-y-12">
+      <div className="max-w-xl text-[17px] leading-[1.85] text-neutral-700 space-y-5">
+        {lines.map((line, index) => {
+          const trimmed = line.trim();
 
-      {/* Main description (author-provided) */}
-      <p className="leading-relaxed text-foreground">
-        {product.description}
-      </p>
+          // Empty line = spacing
+          if (!trimmed) {
+            return <div key={index} className="h-4" />;
+          }
 
-      {/* Professional supporting copy */}
-      <div className="space-y-3 text-muted leading-relaxed">
-        <p>
-          This is a professionally designed digital product created to help you
-          save time and achieve high-quality results with minimal effort.
-        </p>
+          // FIRST CONTENT LINE = HERO TITLE
+          if (index === firstContentIndex) {
+            return (
+              <h2
+                key={index}
+                className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-900 leading-[1.15]"
+              >
+                {trimmed}
+              </h2>
+            );
+          }
 
-        <p>
-          The file is delivered instantly after purchase and can be easily
-          customized to fit your personal or business needs. No physical items
-          are shipped — you receive immediate access to the downloadable files.
-        </p>
+          // Bullet line
+          if (trimmed.startsWith("•")) {
+            return (
+              <div key={index} className="flex gap-3 pl-2">
+                <span className="mt-[8px] h-1.5 w-1.5 rounded-full bg-neutral-500 shrink-0" />
+                <span>{trimmed.replace(/^•\s*/, "")}</span>
+              </div>
+            );
+          }
 
-        <p>
-          Whether you’re using this for personal projects or client work (with
-          the appropriate license), the product is built to be clear,
-          practical, and ready to use right away.
-        </p>
+          // Section header (emoji + uppercase line)
+          if (
+            /^[^\w]*[A-Z0-9\s’']+$/.test(trimmed) &&
+            trimmed.length < 60
+          ) {
+            return (
+              <h3
+                key={index}
+                className="pt-10 text-2xl font-semibold tracking-tight text-neutral-900"
+              >
+                {trimmed}
+              </h3>
+            );
+          }
+
+          // Normal paragraph
+          return <p key={index}>{trimmed}</p>;
+        })}
       </div>
     </section>
   );

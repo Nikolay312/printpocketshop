@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
 interface Category {
   id: string;
   name: string;
@@ -15,46 +19,99 @@ export default function CategoryChips({
   active,
   onChange,
 }: Props) {
-  const baseChip =
-    "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:shadow-[var(--ring)]";
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState({ width: 0, left: 0 });
 
-  const activeChip =
-    "bg-[var(--accent)] text-white shadow-sm";
+  const items = [{ id: "all", name: "All", slug: null }, ...categories];
 
-  const inactiveChip =
-    "bg-surface text-foreground hover:bg-surface-muted";
+  /* Sliding indicator */
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const activeIndex = items.findIndex(
+      (c) => c.slug === active || (c.slug === null && active === null)
+    );
+
+    const activeElement = container.children[
+      activeIndex
+    ] as HTMLElement | undefined;
+
+    if (activeElement) {
+      setIndicator({
+        left: activeElement.offsetLeft,
+        width: activeElement.offsetWidth,
+      });
+    }
+  }, [active, categories]);
 
   return (
-    <div className="relative">
-      <div className="overflow-x-auto">
-        <div className="flex w-max gap-3 py-1">
-          {/* All */}
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            className={`${baseChip} ${
-              active === null ? activeChip : inactiveChip
-            }`}
-          >
-            All
-          </button>
-
-          {categories.map((category) => {
-            const isActive = active === category.slug;
+    <div className="w-full flex justify-center">
+      <div className="relative">
+        <div
+          ref={containerRef}
+          className="
+            relative flex items-center
+            gap-10
+            border-b border-neutral-100
+          "
+        >
+          {items.map((category) => {
+            const isActive =
+              active === category.slug ||
+              (active === null && category.slug === null);
 
             return (
               <button
                 key={category.id}
                 type="button"
                 onClick={() => onChange(category.slug)}
-                className={`${baseChip} ${
-                  isActive ? activeChip : inactiveChip
-                }`}
+                className="
+                  group
+                  relative pb-4 px-2
+                  text-base font-medium tracking-tight
+                  transition-all duration-200
+                  active:scale-[0.96]
+                "
               >
-                {category.name}
+                {/* subtle hover background */}
+                <span
+                  className="
+                    absolute inset-0 -bottom-1
+                    rounded-md
+                    bg-neutral-100
+                    opacity-0
+                    transition-opacity duration-200
+                    group-hover:opacity-60
+                  "
+                />
+
+                <span
+                  className={
+                    isActive
+                      ? "relative z-10 text-neutral-900"
+                      : "relative z-10 text-neutral-500 group-hover:text-neutral-900"
+                  }
+                >
+                  {category.name}
+                </span>
               </button>
             );
           })}
+
+          {/* Sliding Indicator */}
+          <span
+            className="
+              absolute bottom-0
+              h-[2.5px]
+              bg-neutral-900
+              transition-all duration-400 ease-out
+            "
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+            }}
+          />
         </div>
       </div>
     </div>

@@ -1,8 +1,24 @@
 import "server-only";
+
+import { OrderStatus, ProductLicense } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { mapDbProductToProduct } from "@/lib/mappers/productMapper";
 import type { Order } from "@/types/order";
 import type { PurchasedProduct } from "@/types/product";
+
+/* =========================
+   Helpers
+========================= */
+
+function mapPurchasedProduct(dbProduct: unknown) {
+  if (!dbProduct || typeof dbProduct !== "object") {
+    return null;
+  }
+
+  return mapDbProductToProduct(
+    dbProduct as Parameters<typeof mapDbProductToProduct>[0]
+  );
+}
 
 /* =========================
    SINGLE ORDER
@@ -14,7 +30,12 @@ export async function getOrderForUser(userId: string, orderId: string) {
     include: {
       items: {
         include: {
-          product: { include: { category: true } },
+          product: {
+            include: {
+              category: true,
+              files: true,
+            },
+          },
         },
       },
     },
@@ -27,7 +48,8 @@ export async function getOrderForUser(userId: string, orderId: string) {
     createdAt: order.createdAt.toISOString(),
     items: order.items.map((item) => ({
       quantity: item.quantity,
-      product: mapDbProductToProduct(item.product),
+      license: item.license,
+      product: mapPurchasedProduct(item.product),
     })),
   };
 }
@@ -43,7 +65,12 @@ export async function getOrdersForUser(userId: string): Promise<Order[]> {
     include: {
       items: {
         include: {
-          product: { include: { category: true } },
+          product: {
+            include: {
+              category: true,
+              files: true,
+            },
+          },
         },
       },
     },
@@ -53,12 +80,13 @@ export async function getOrdersForUser(userId: string): Promise<Order[]> {
     id: order.id,
     createdAt: order.createdAt.toISOString(),
     total: order.total,
-    status: order.status === "PAID" ? "PAID" : "FAILED",
+    status: order.status,
     items: order.items.map((item) => ({
       quantity: item.quantity,
-      product: mapDbProductToProduct(item.product),
+      license: item.license,
+      product: mapPurchasedProduct(item.product),
     })),
-  }));
+  })) as Order[];
 }
 
 /* =========================
@@ -69,12 +97,17 @@ export async function getPurchasedProductsForUser(
   userId: string
 ): Promise<PurchasedProduct[]> {
   const orders = await prisma.order.findMany({
-    where: { userId, status: "PAID" },
+    where: { userId, status: OrderStatus.PAID },
     orderBy: { createdAt: "desc" },
     include: {
       items: {
         include: {
-          product: { include: { category: true } },
+          product: {
+            include: {
+              category: true,
+              files: true,
+            },
+          },
         },
       },
     },
@@ -84,7 +117,9 @@ export async function getPurchasedProductsForUser(
     order.items.map((item) => ({
       orderId: order.id,
       purchasedAt: order.createdAt.toISOString(),
-      product: mapDbProductToProduct(item.product),
+      quantity: item.quantity,
+      license: item.license as ProductLicense,
+      product: mapPurchasedProduct(item.product),
     }))
-  );
+  ) as PurchasedProduct[];
 }

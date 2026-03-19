@@ -1,6 +1,37 @@
+import "server-only";
+
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+/* =========================
+   ENV VALIDATION
+========================= */
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+if (!RESEND_API_KEY) {
+  throw new Error("RESEND_API_KEY is not set");
+}
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+if (!APP_URL) {
+  throw new Error("NEXT_PUBLIC_APP_URL is not set");
+}
+
+const resend = new Resend(RESEND_API_KEY);
+
+const FROM_EMAIL = "PrintPocketShop <no-reply@printpocketshop.com>";
+
+/* =========================
+   COMMON RETURN TYPE
+========================= */
+
+export type EmailResult = {
+  provider: "resend";
+  id: string | null;
+};
+
+/* =========================
+   TYPES
+========================= */
 
 type PasswordResetEmailParams = {
   email: string;
@@ -21,7 +52,6 @@ type OrderConfirmationParams = {
 
 type DownloadEmailParams = {
   email: string;
-  orderId: string;
 };
 
 type RefundEmailParams = {
@@ -31,18 +61,52 @@ type RefundEmailParams = {
   currency: string;
 };
 
+/* =========================
+   INTERNAL SEND HELPER
+========================= */
+
+async function sendEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+}): Promise<EmailResult> {
+  const response = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+    ...(params.replyTo ? { reply_to: params.replyTo } : {}),
+  });
+
+  // Resend returns:
+  // { data: { id: string } | null, error: {...} | null }
+
+  if (response.error) {
+    throw new Error(
+      `Email send failed: ${response.error.message ?? "Unknown error"}`
+    );
+  }
+
+  return {
+    provider: "resend",
+    id: response.data?.id ?? null,
+  };
+}
+
+/* =========================
+   EMAILS
+========================= */
+
 export async function sendPasswordResetEmail({
   email,
   token,
-}: PasswordResetEmailParams) {
-  if (!process.env.NEXT_PUBLIC_APP_URL) {
-    throw new Error("Missing NEXT_PUBLIC_APP_URL");
-  }
+}: PasswordResetEmailParams): Promise<EmailResult> {
+  const resetUrl = `${APP_URL}/reset-password?token=${encodeURIComponent(
+    token
+  )}`;
 
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
-
-  await resend.emails.send({
-    from: "PrintPocketShop <no-reply@printpocketshop.com>",
+  return sendEmail({
     to: email,
     subject: "Reset your password",
     html: `
@@ -56,15 +120,12 @@ export async function sendPasswordResetEmail({
 export async function sendEmailVerification({
   email,
   token,
-}: EmailVerificationParams) {
-  if (!process.env.NEXT_PUBLIC_APP_URL) {
-    throw new Error("Missing NEXT_PUBLIC_APP_URL");
-  }
+}: EmailVerificationParams): Promise<EmailResult> {
+  const verifyUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(
+    token
+  )}`;
 
-  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
-
-  await resend.emails.send({
-    from: "PrintPocketShop <no-reply@printpocketshop.com>",
+  return sendEmail({
     to: email,
     subject: "Verify your email address",
     html: `
@@ -81,21 +142,18 @@ export async function sendOrderConfirmationEmail({
   orderId,
   total,
   currency,
-}: OrderConfirmationParams) {
-  if (!process.env.NEXT_PUBLIC_APP_URL) {
-    throw new Error("Missing NEXT_PUBLIC_APP_URL");
-  }
+}: OrderConfirmationParams): Promise<EmailResult> {
+  const ordersUrl = `${APP_URL}/account/orders/${orderId}`;
 
-  const ordersUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders/${orderId}`;
-
-  await resend.emails.send({
-    from: "PrintPocketShop <no-reply@printpocketshop.com>",
+  return sendEmail({
     to: email,
     subject: "Your order is confirmed 🎉",
     html: `
       <h2>Thank you for your purchase!</h2>
       <p>Your order <strong>#${orderId}</strong> has been successfully completed.</p>
-      <p><strong>Total:</strong> ${(total / 100).toFixed(2)} ${currency}</p>
+      <p><strong>Total:</strong> ${(total / 100).toFixed(
+        2
+      )} ${currency}</p>
       <p>
         <a href="${ordersUrl}">
           View your order & download files
@@ -108,16 +166,10 @@ export async function sendOrderConfirmationEmail({
 
 export async function sendDownloadLinksEmail({
   email,
-  orderId,
-}: DownloadEmailParams) {
-  if (!process.env.NEXT_PUBLIC_APP_URL) {
-    throw new Error("Missing NEXT_PUBLIC_APP_URL");
-  }
+}: DownloadEmailParams): Promise<EmailResult> {
+  const downloadsUrl = `${APP_URL}/account/downloads`;
 
-  const downloadsUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/downloads`;
-
-  await resend.emails.send({
-    from: "PrintPocketShop <no-reply@printpocketshop.com>",
+  return sendEmail({
     to: email,
     subject: "Your downloads are ready 📦",
     html: `
@@ -136,21 +188,15 @@ export async function sendDownloadLinksEmail({
   });
 }
 
-// ✅ NEW — refund email
 export async function sendRefundEmail({
   email,
   orderId,
   total,
   currency,
-}: RefundEmailParams) {
-  if (!process.env.NEXT_PUBLIC_APP_URL) {
-    throw new Error("Missing NEXT_PUBLIC_APP_URL");
-  }
+}: RefundEmailParams): Promise<EmailResult> {
+  const ordersUrl = `${APP_URL}/account/orders/${orderId}`;
 
-  const ordersUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders/${orderId}`;
-
-  await resend.emails.send({
-    from: "PrintPocketShop <no-reply@printpocketshop.com>",
+  return sendEmail({
     to: email,
     subject: "Your refund has been processed",
     html: `

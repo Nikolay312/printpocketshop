@@ -17,6 +17,7 @@ export async function GET() {
       id: true,
       email: true,
       name: true,
+      country: true, // ✅ ADDED
     },
   });
 

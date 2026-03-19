@@ -19,15 +19,25 @@ export interface Category {
   slug: string;
 }
 
+/**
+ * Downloadable product file
+ */
+export interface ProductFile {
+  id: string;
+  label?: string | null;
+}
+
 export interface Product {
   id: string;
   title: string;
   slug: string;
   description: string;
 
-  image?: string;
+  image?: string | null;
   previewImages: string[];
-  fileUrl?: string;
+
+  // multi-file system
+  files: ProductFile[];
 
   price: number;
   currency: Currency;
@@ -45,12 +55,14 @@ export interface Product {
 
   isFeatured: boolean;
   sales: number;
-  createdAt: string;
+  createdAt: string | Date;
 }
 
-
+/**
+ * Purchased product (can reference deleted product)
+ */
 export type PurchasedProduct = {
-  product: Product;
+  product: Product | null; // ✅ FIXED
   purchasedAt: string; // ISO
   orderId: string;
 };

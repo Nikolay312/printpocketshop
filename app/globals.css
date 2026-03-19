@@ -1,55 +1,63 @@
 @import "tailwindcss";
 
 /* =========================================================
-   PrintPocketShop — Professional Design System (Light)
-   Premium neutrals + modern blue
+   PrintPocketShop — Premium Design System (Light)
+   Minimal Luxe • Neutral Premium • Refined Deep Navy Accent
    ========================================================= */
 
 :root {
-  /* Core */
-  --background: #fbfcfe; /* slightly off-white = premium */
-  --foreground: #0b1220; /* deep slate ink */
-
   /* Surfaces */
+  --bg: #f8f9fb;
+  --fg: #0b1220;
+
   --surface: #ffffff;
-  --surface-muted: #f3f6fb; /* cool, clean */
-  --surface-soft: #eef2f8;
+  --surface-2: #f3f5f8;
+  --surface-3: #eaeef4;
 
-  /* Borders + text */
-  --border: #e6ebf2;
-  --border-strong: #d7deea;
-  --muted: #5b6b82;
+  /* Borders */
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
 
-  /* Accent (professional blue) */
-  --accent: #2563eb; /* blue-600 */
-  --accent-hover: #1d4ed8; /* blue-700 */
-  --accent-pressed: #1e40af; /* blue-800 */
-  --accent-soft: rgba(37, 99, 235, 0.14);
+  /* Text */
+  --muted: #4b5563;
+  --muted-2: #6b7280;
+
+  /* Accent */
+  --accent: #1e2a47;
+  --accent-hover: #162038;
+  --accent-pressed: #11192b;
+  --accent-soft: rgba(30, 42, 71, 0.1);
 
   /* Status */
-  --danger: #dc2626; /* red-600 */
-  --success: #16a34a; /* green-600 */
-  --warning: #d97706; /* amber-600 */
+  --danger: #dc2626;
+  --success: #15803d;
+  --warning: #d97706;
 
   /* Radius */
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
 
-  /* Shadows (more realistic) */
-  --shadow-xs: 0 1px 1px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 10px 24px rgba(15, 23, 42, 0.10);
-  --shadow-lg: 0 18px 50px rgba(15, 23, 42, 0.14);
+  /* Shadows */
+  --shadow-xs: 0 1px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06),
+    0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 12px 32px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 24px 64px rgba(15, 23, 42, 0.1);
 
-  /* Focus ring */
-  --ring: 0 0 0 3px rgba(37, 99, 235, 0.28);
+  /* Focus */
+  --ring: 0 0 0 3px rgba(30, 42, 71, 0.2);
 
   /* Motion */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Typography */
+  --tracking-tight: -0.02em;
 }
 
-/* Base reset */
+/* ---------------------------------------------------------
+   Base Reset
+---------------------------------------------------------- */
 
 *,
 *::before,
@@ -58,66 +66,90 @@
 }
 
 html {
+  height: 100%;
   scroll-behavior: smooth;
+  text-size-adjust: 100%;
+  scrollbar-gutter: stable;
 }
 
-html,
 body {
+  min-height: 100%;
   margin: 0;
   padding: 0;
-}
-
-body {
-  min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--fg);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  line-height: 1.55;
+    "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  line-height: 1.6;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography */
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* ---------------------------------------------------------
+   Typography
+---------------------------------------------------------- */
 
 h1,
 h2,
 h3,
 h4 {
-  font-weight: 750;
-  letter-spacing: -0.02em;
   margin: 0;
+  letter-spacing: var(--tracking-tight);
+  font-weight: 650;
 }
 
 h1 {
   font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.15;
 }
 
 h2 {
   font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.2;
 }
 
 h3 {
   font-size: 1.25rem;
+  line-height: 1.3;
 }
 
 h4 {
   font-size: 1.1rem;
+  line-height: 1.35;
 }
 
 p {
   margin: 0;
 }
 
-/* Elements */
+small {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------
+   Elements
+---------------------------------------------------------- */
 
 a {
   color: inherit;
   text-decoration: none;
 }
 
-img {
+img,
+svg,
+video {
   display: block;
   max-width: 100%;
   height: auto;
@@ -127,15 +159,13 @@ img {
   background: var(--accent-soft);
 }
 
-/* Scrollbar polish (WebKit) */
+/* ---------------------------------------------------------
+   Scrollbar
+---------------------------------------------------------- */
 
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -147,11 +177,11 @@ img {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(91, 107, 130, 0.35);
-  border: 2px solid transparent;
-  background-clip: padding-box;
 }
 
-/* Layout helpers */
+/* ---------------------------------------------------------
+   Layout Helpers
+---------------------------------------------------------- */
 
 .container-app {
   width: 100%;
@@ -161,29 +191,42 @@ img {
   padding-right: 24px;
 }
 
-/* Surfaces / Cards */
+.container-prose {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ---------------------------------------------------------
+   Surface Helpers
+---------------------------------------------------------- */
+
+.card,
+.card-elevated,
+.card-soft {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xs);
 }
 
 .card-elevated {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
 }
 
 .card-soft {
-  background: var(--surface-muted);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--surface-2);
 }
 
-/* Buttons (generic helpers; your UI components can still override) */
+/* ---------------------------------------------------------
+   Buttons
+---------------------------------------------------------- */
 
 .btn-primary,
 .btn-ghost {
@@ -194,16 +237,21 @@ img {
   font-size: 14px;
   font-weight: 650;
   cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-lg);
+  transition:
+    transform 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out),
+    background-color 200ms var(--ease-out),
+    border-color 200ms var(--ease-out);
 }
 
 .btn-primary {
   padding: 10px 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid transparent;
   background: var(--accent);
   color: #ffffff;
-  transition: transform 120ms var(--ease-out), box-shadow 160ms var(--ease-out),
-    background 150ms ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
@@ -218,41 +266,20 @@ img {
   box-shadow: var(--shadow-sm);
 }
 
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
 .btn-ghost {
   padding: 10px 18px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--surface);
   border: 1px solid var(--border);
-  color: var(--foreground);
-  transition: background 150ms ease, border-color 150ms ease,
-    transform 120ms var(--ease-out);
-  backdrop-filter: blur(8px);
 }
 
 .btn-ghost:hover {
-  background: var(--surface);
   border-color: var(--border-strong);
   transform: translateY(-1px);
 }
 
-.btn-ghost:active {
-  transform: translateY(0);
-}
-
-.btn-ghost:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Inputs */
+/* ---------------------------------------------------------
+   Inputs
+---------------------------------------------------------- */
 
 input,
 textarea,
@@ -263,47 +290,99 @@ select {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: 14px;
-  color: var(--foreground);
-  transition: border-color 150ms ease, box-shadow 150ms ease,
-    background 150ms ease;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: rgba(91, 107, 130, 0.8);
+  color: var(--fg);
+  transition:
+    border-color 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out);
 }
 
 input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: rgba(37, 99, 235, 0.55);
+  border-color: rgba(30, 42, 71, 0.55);
   box-shadow: var(--ring);
 }
 
-input:disabled,
-textarea:disabled,
-select:disabled {
-  background: var(--surface-soft);
-  cursor: not-allowed;
-  opacity: 0.85;
+textarea {
+  min-height: 120px;
+  resize: vertical;
 }
 
-/* Focus */
+/* ---------------------------------------------------------
+   Focus Accessibility
+---------------------------------------------------------- */
 
 :focus-visible {
   outline: none;
   box-shadow: var(--ring);
 }
 
-/* Utilities */
+:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------
+   Motion Utilities
+---------------------------------------------------------- */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 200ms var(--ease-out);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 700ms ease-out both;
+}
+
+/* ---------------------------------------------------------
+   Background Utilities
+---------------------------------------------------------- */
+
+.bg-radial-gradient {
+  background: radial-gradient(
+    circle at center,
+    rgba(11, 18, 32, 0.06),
+    transparent 70%
+  );
+}
+
+/* ---------------------------------------------------------
+   Utility Bridges
+---------------------------------------------------------- */
 
 .text-muted {
   color: var(--muted);
 }
 
+.text-muted-2 {
+  color: var(--muted-2);
+}
+
 .bg-background {
-  background: var(--background);
+  background: var(--bg);
 }
 
 .bg-surface {
@@ -315,5 +394,23 @@ select:disabled {
 }
 
 .text-foreground {
-  color: var(--foreground);
+  color: var(--fg);
 }
+
+@keyframes fadeBlurIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.animate-fadeBlur {
+  animation: fadeBlurIn 500ms cubic-bezier(.4,0,.2,1);
+}
+

@@ -1,5 +1,5 @@
 import AuthGuard from "@/components/auth/AuthGuard";
-import ManageBillingButton from "@/components/account/ManageBillingButton";
+import AccountSidebar from "@/components/account/AccountSidebar";
 
 export default function AccountLayout({
   children,
@@ -8,14 +8,26 @@ export default function AccountLayout({
 }) {
   return (
     <AuthGuard>
-      <section className="mx-auto max-w-6xl px-6 py-10 space-y-6">
-        {/* Account actions */}
-        <div className="flex justify-end">
-          <ManageBillingButton />
-        </div>
+      <main className="relative min-h-screen bg-background">
+        {/* Subtle ambient background */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-muted/10 to-transparent" />
 
-        {children}
-      </section>
+        <div className="relative mx-auto max-w-7xl px-6 py-16 sm:py-20">
+          <section className="flex flex-col gap-12 lg:flex-row lg:gap-20">
+            
+            {/* Sidebar */}
+            <aside className="lg:sticky lg:top-24 lg:self-start">
+              <AccountSidebar />
+            </aside>
+
+            {/* Content Area */}
+            <div className="flex-1 animate-fade-in">
+              {children}
+            </div>
+
+          </section>
+        </div>
+      </main>
     </AuthGuard>
   );
 }

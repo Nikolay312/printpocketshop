@@ -5,13 +5,12 @@ import Link from "next/link";
 import { getAllProducts } from "@/lib/api";
 import ProductCard from "@/components/product/ProductCard";
 import HowItWorks from "@/components/home/HowItWorks";
-import TrustSection from "@/components/home/TrustSection";
-import CategoryGrid from "@/components/home/CategoryGrid";
+import FadeIn from "@/components/ui/FadeIn";
 
 export const metadata: Metadata = {
-  title: "PrintPocketShop — Premium Digital Templates",
+  title: "Modern Digital Templates | PrintPocketShop",
   description:
-    "Professionally designed digital templates. Instant download, lifetime access, and easy customization.",
+    "Modern, ready-to-use digital templates. Instant downloads for resumes, planners, and creative tools — built to save you time and make you shine.",
 };
 
 export default async function HomePage() {
@@ -19,124 +18,113 @@ export default async function HomePage() {
   const featured = products.filter((p) => p.isFeatured);
 
   return (
-    <main>
-      {/* ================= HERO ================= */}
-      <section className="px-6 py-32 text-center">
-        <div className="mx-auto max-w-4xl space-y-8">
-          <span className="inline-block rounded-full bg-surface px-4 py-1 text-xs font-medium text-muted">
-            Premium digital templates
-          </span>
+    <main className="relative flex flex-col bg-background overflow-hidden">
 
-          <h1 className="text-4xl md:text-6xl font-semibold tracking-tight">
-            Digital templates designed to
-            <span className="block text-accent">
-              save time and look professional
-            </span>
-          </h1>
+{/* ================= HERO ================= */}
+<section className="relative overflow-hidden px-6 pt-36 pb-32 text-center sm:pt-44 sm:pb-40 lg:pt-52 lg:pb-48">
+  {/* Background gradient */}
+  <div className="absolute inset-0 -z-40 bg-gradient-to-b from-[#f8fafc] via-[#f4f7fb] to-[#eaf0f7]" />
 
-          <p className="mx-auto max-w-2xl text-lg text-muted leading-relaxed">
-            High-quality resumes, planners, and printable designs — ready to use,
-            easy to customize, and available instantly after purchase.
-          </p>
+  {/* Ambient blur shapes */}
+  <div className="absolute -top-24 left-[16%] h-[380px] w-[380px] rounded-full bg-accent/15 blur-[120px] animate-float-slow" />
+  <div className="absolute bottom-[-90px] right-[12%] h-[320px] w-[320px] rounded-full bg-blue-400/10 blur-[120px] animate-float-slower" />
 
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Link
-              href="/shop"
-              className="inline-flex items-center justify-center rounded-full bg-accent px-8 py-3 text-sm font-semibold text-white transition hover:bg-accent-hover"
-            >
-              Browse products
-            </Link>
+  {/* Cleaner center glow (main improvement) */}
+  <div className="absolute top-[-10%] left-1/2 -z-20 h-[700px] w-[1000px] -translate-x-1/2 rounded-full bg-white/60 blur-[120px]" />
+  <div className="absolute top-[-6%] left-1/2 -z-20 h-[620px] w-[920px] -translate-x-1/2 rounded-full bg-accent/10 blur-[160px]" />
 
-            <Link
-              href="/about"
-              className="text-sm font-medium text-muted hover:text-foreground transition"
-            >
-              Learn more →
-            </Link>
-          </div>
+  {/* Soft vignette */}
+  <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgba(0,0,0,0.03)_100%)]" />
 
-          <p className="text-xs text-muted">
-            Instant download · Lifetime access · No subscription
-          </p>
-        </div>
-      </section>
+  <FadeIn>
+    <div className="mx-auto flex max-w-5xl flex-col items-center">
+      <h1 className="max-w-4xl text-5xl font-bold tracking-[-0.035em] leading-[1.08] text-transparent bg-clip-text bg-gradient-to-br from-gray-950 via-gray-800 to-gray-600 sm:text-6xl sm:leading-[1.1] lg:text-7xl lg:leading-[1.04]">
+        Modern, Ready-to-Use
+        <span className="mt-2 block bg-gradient-to-r from-gray-950 via-gray-700 to-gray-500 bg-clip-text text-transparent">
+          Digital Templates
+        </span>
+      </h1>
 
-      {/* ================= TRUST ================= */}
-      <section className="bg-surface py-20">
-        <TrustSection />
-      </section>
+      {/* Improved paragraph width + spacing */}
+      <p className="mt-8 max-w-2xl text-lg leading-[1.9] text-gray-600 sm:mt-10 sm:text-xl">
+        Instant downloads for resumes, planners, and creative tools — designed
+        to save you time, elevate your work, and help you stand out.
+      </p>
 
-      {/* ================= FEATURED ================= */}
-      <section className="px-6 py-32">
-        <div className="mx-auto max-w-6xl space-y-16">
-          <div className="text-center space-y-3">
-            <h2 className="text-3xl font-semibold">
+      <div className="mt-10 sm:mt-12">
+        <Link
+          href="/shop"
+          className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-accent px-10 py-4 text-base font-semibold text-white shadow-[0_16px_40px_rgba(0,0,0,0.14)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(0,0,0,0.18)]"
+        >
+          <span className="relative z-10">Browse Products</span>
+
+          <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
+        </Link>
+      </div>
+    </div>
+  </FadeIn>
+</section>
+
+    {/* ================= FEATURED ================= */}
+    <section className="relative px-6 py-40 sm:py-48">
+
+      {/* Soft section background layer */}
+      <div className="absolute inset-0 -z-20 bg-gradient-to-b from-white via-[#f9fafc] to-white" />
+
+      {/* Subtle top divider glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[300px] w-[800px] bg-accent/5 blur-[120px] -z-10" />
+
+      <FadeIn>
+        <div className="mx-auto max-w-7xl">
+
+          {/* Header Row */}
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-10 mb-20">
+
+            <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight text-gray-900">
               Featured products
             </h2>
-            <p className="text-muted max-w-xl mx-auto">
-              Best-selling and hand-picked templates trusted by professionals
-              and creatives.
-            </p>
-          </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-
-          <div className="text-center">
             <Link
               href="/shop"
-              className="inline-block rounded-full border border-border px-8 py-3 text-sm font-medium hover:bg-surface transition"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
             >
-              View all products
+              View all products →
             </Link>
+
           </div>
+
+          {/* Premium Card Container */}
+          <div className="relative rounded-3xl border border-gray-200 bg-white/70 backdrop-blur-xl p-12 shadow-[0_40px_120px_rgba(0,0,0,0.06)]">
+
+            {/* Soft internal glow */}
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+
+            <div className="relative grid gap-14 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+          </div>
+
         </div>
-      </section>
+      </FadeIn>
+    </section>
+
 
       {/* ================= HOW IT WORKS ================= */}
-      <section className="bg-surface py-32">
-        <HowItWorks />
-      </section>
+      <section className="relative px-6 py-40 sm:py-48 bg-gradient-to-b from-white to-gray-50">
+        <FadeIn>
+          <div className="mx-auto max-w-5xl">
 
-      {/* ================= CATEGORIES ================= */}
-      <section className="px-6 py-32">
-        <div className="mx-auto max-w-6xl space-y-14">
-          <div className="text-center space-y-3">
-            <h2 className="text-3xl font-semibold">
-              Browse by category
-            </h2>
-            <p className="text-muted">
-              Find exactly what you need in seconds
-            </p>
+            <div className="rounded-3xl border border-border bg-white p-14 shadow-[0_30px_90px_rgba(0,0,0,0.08)]">
+              <HowItWorks />
+            </div>
+
           </div>
-
-          <CategoryGrid />
-        </div>
+        </FadeIn>
       </section>
 
-      {/* ================= FINAL CTA ================= */}
-      <section className="bg-surface px-6 py-32 text-center">
-        <div className="mx-auto max-w-3xl space-y-6">
-          <h2 className="text-3xl font-semibold">
-            Ready to get started?
-          </h2>
-
-          <p className="text-muted">
-            Explore professionally designed templates that help you present
-            your work with confidence.
-          </p>
-
-          <Link
-            href="/shop"
-            className="inline-flex items-center justify-center rounded-full bg-accent px-8 py-3 text-sm font-semibold text-white transition hover:bg-accent-hover"
-          >
-            Browse all templates
-          </Link>
-        </div>
-      </section>
     </main>
   );
 }

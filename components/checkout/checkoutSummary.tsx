@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/formatPrice";
-import { useCart } from "@/components/cart/CartContext";
 import type { Product } from "@/types/product";
 
 /* =========================
@@ -25,7 +24,6 @@ type Props = {
 
 export default function CheckoutSummary({ items, total }: Props) {
   const router = useRouter();
-  const { clearCart } = useCart();
 
   const handlePlaceOrder = async () => {
     const res = await fetch("/api/checkout", {
@@ -44,40 +42,64 @@ export default function CheckoutSummary({ items, total }: Props) {
     }
 
     const { url } = await res.json();
-    router.push(url); // redirect to Stripe
+    router.push(url);
   };
 
   return (
-    <div className="border rounded-lg p-6 space-y-4">
-      <h2 className="text-xl font-semibold">Order Summary</h2>
+    <div className="border border-border bg-background p-6 space-y-6">
+      {/* HEADER */}
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold tracking-tight">
+          Order summary
+        </h2>
+        <p className="text-xs text-muted">
+          Confirm your items before proceeding to secure payment.
+        </p>
+      </div>
 
-      <ul className="space-y-2">
+      {/* LINE ITEMS */}
+      <ul className="divide-y divide-border">
         {items.map((item) => (
           <li
             key={item.product.id}
-            className="flex justify-between"
+            className="flex items-center justify-between py-3 text-sm"
           >
-            <span>
+            <span className="text-muted">
               {item.product.title} × {item.quantity}
             </span>
-            <span>
+
+            <span className="font-medium">
               {formatPrice(item.product.price * item.quantity)}
             </span>
           </li>
         ))}
       </ul>
 
-      <div className="border-t pt-4 flex justify-between font-bold">
-        <span>Total</span>
-        <span>{formatPrice(total)}</span>
+      {/* TOTAL */}
+      <div className="border-t border-border pt-4 space-y-2">
+        <div className="flex justify-between text-sm text-muted">
+          <span>Subtotal</span>
+          <span>{formatPrice(total)}</span>
+        </div>
+
+        <div className="flex justify-between text-base font-semibold">
+          <span>Total</span>
+          <span>{formatPrice(total)}</span>
+        </div>
       </div>
 
+      {/* CTA */}
       <button
         onClick={handlePlaceOrder}
-        className="w-full bg-black text-white py-3 rounded-lg hover:opacity-90"
+        className="w-full bg-accent text-white py-3 text-sm font-semibold transition-colors hover:bg-accent-hover"
       >
-        Proceed to payment
+        Proceed to secure payment
       </button>
+
+      {/* TRUST NOTE */}
+      <p className="text-xs text-muted text-center">
+        Secure encrypted checkout · Instant digital delivery · No subscription
+      </p>
     </div>
   );
 }

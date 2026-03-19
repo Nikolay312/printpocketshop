@@ -8,18 +8,18 @@ type Props = {
 };
 
 function StatusBadge({ status }: { status: Order["status"] }) {
-  const styles =
-    status === "PAID"
-      ? "bg-green-100 text-green-700"
-      : status === "PENDING"
-      ? "bg-yellow-100 text-yellow-700"
-      : "bg-red-100 text-red-700";
+  const statusStyles: Record<Order["status"], string> = {
+    PAID: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    PENDING: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    REFUNDED: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    EXPIRED: "bg-muted text-muted-foreground border-border",
+  };
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium capitalize ${styles}`}
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${statusStyles[status]}`}
     >
-      {status.toLowerCase()}
+      {status}
     </span>
   );
 }
@@ -27,8 +27,16 @@ function StatusBadge({ status }: { status: Order["status"] }) {
 export default function OrdersList({ orders }: Props) {
   if (orders.length === 0) {
     return (
-      <div className="card-soft p-8 text-center text-sm text-muted">
-        You haven’t placed any orders yet.
+      <div className="rounded-3xl border border-border bg-background p-12 text-center shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+        <div className="mx-auto max-w-md space-y-3">
+          <p className="text-lg font-semibold tracking-tight text-foreground">
+            No orders available
+          </p>
+
+          <p className="text-sm leading-relaxed text-muted">
+            Completed purchases will appear here for lifetime reference.
+          </p>
+        </div>
       </div>
     );
   }
@@ -38,40 +46,39 @@ export default function OrdersList({ orders }: Props) {
       {orders.map((order) => (
         <Link
           key={order.id}
-          href={`/account/orders/${order.id}`}
-          className="group block rounded-2xl border border-border bg-background p-5 transition hover:border-foreground/20 hover:shadow-sm"
+          href="/account/downloads"
+          className="group block rounded-2xl border border-border bg-background p-7 transition-all duration-200 hover:-translate-y-0.5 hover:border-foreground/10 hover:shadow-xl"
         >
-          {/* Top */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <p className="font-semibold text-foreground">
-                Order #{order.id.slice(0, 8)}
-              </p>
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+
+            {/* LEFT SIDE */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-4">
+                <p className="text-base font-semibold text-foreground">
+                  Order #{order.id.slice(0, 8)}
+                </p>
+
+                <StatusBadge status={order.status} />
+              </div>
+
               <p className="text-sm text-muted">
                 Placed on {formatDate(order.createdAt)}
               </p>
             </div>
 
-            <StatusBadge status={order.status} />
+            {/* RIGHT SIDE */}
+            <div className="flex items-center justify-between sm:justify-end sm:gap-10">
+              <p className="text-sm text-muted">
+                {order.items.length} item
+                {order.items.length !== 1 && "s"}
+              </p>
+
+              <p className="text-lg font-semibold text-foreground">
+                {formatPrice(order.total)}
+              </p>
+            </div>
+
           </div>
-
-          <div className="my-4 h-px bg-border" />
-
-          {/* Bottom */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted">
-              {order.items.length} item
-              {order.items.length !== 1 && "s"}
-            </p>
-
-            <p className="font-semibold text-foreground">
-              {formatPrice(order.total)}
-            </p>
-          </div>
-
-          <p className="mt-3 text-xs text-muted opacity-0 transition group-hover:opacity-100">
-            View order details →
-          </p>
         </Link>
       ))}
     </div>

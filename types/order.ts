@@ -1,15 +1,16 @@
 import type { Product } from "./product";
 
-export type OrderStatus = "PAID" | "PENDING" | "FAILED";
+export type OrderStatus = "PENDING" | "PAID" | "REFUNDED" | "EXPIRED";
 
 export type OrderItem = {
   quantity: number;
   product: Product;
+  license?: "PERSONAL" | "COMMERCIAL";
 };
 
 export type Order = {
   id: string;
-  createdAt: string; // ✅ STRING (not Date)
+  createdAt: string;
   status: OrderStatus;
   total: number;
   items: OrderItem[];

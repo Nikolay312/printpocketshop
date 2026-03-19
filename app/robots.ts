@@ -1,19 +1,23 @@
 // app/robots.ts
 import type { MetadataRoute } from "next";
 
-export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+const BASE_URL = "https://printpocketshop.com";
 
+export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: [
-        "/api/",
-        "/account/",
-        "/admin/",
-      ],
-    },
-    sitemap: `${baseUrl}/sitemap.xml`,
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: [
+          "/api/",
+          "/account/",
+          "/admin/",
+          "/checkout/",
+          "/success/",
+        ],
+      },
+    ],
+    sitemap: `${BASE_URL}/sitemap.xml`,
   };
 }

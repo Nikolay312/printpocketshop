@@ -5,19 +5,23 @@ import ShopClient from "./ShopClient";
 import { getAllCategories, getProductsForShop } from "@/lib/api";
 
 export const metadata: Metadata = {
-  title: "Shop Digital Products | PrintPocketShop",
+  title: "Our Products | PrintPocketShop",
   description:
-    "Browse premium digital templates and printables. Instant download, lifetime access, and professional quality.",
+    "Browse our premium digital templates. Instant download. Lifetime access.",
 };
 
 type Props = {
-  searchParams: {
+  searchParams?: Promise<{
     category?: string;
-  };
+  }>;
 };
 
 export default async function ShopPage({ searchParams }: Props) {
-  const category = searchParams?.category ?? undefined;
+  const resolvedSearchParams = searchParams
+    ? await searchParams
+    : undefined;
+
+  const category = resolvedSearchParams?.category ?? undefined;
 
   const [products, categories] = await Promise.all([
     getProductsForShop(category),
@@ -25,12 +29,17 @@ export default async function ShopPage({ searchParams }: Props) {
   ]);
 
   return (
-    <main className="container-app py-20">
-      <ShopClient
-        products={products}
-        categories={categories}
-        activeCategory={category ?? null}
-      />
+    <main className="bg-[var(--bg)]">
+  
+
+      {/* ================= Shop Interface ================= */}
+      <section className="w-full pb-32">
+        <ShopClient
+          products={products}
+          categories={categories}
+          activeCategory={category ?? null}
+        />
+      </section>
     </main>
   );
 }

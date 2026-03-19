@@ -5,23 +5,33 @@ interface ProductGridProps {
   products: Product[];
 }
 
-export default function ProductGrid({ products }: ProductGridProps) {
+export default function ProductGrid({
+  products,
+}: ProductGridProps) {
   return (
     <section
+      aria-label="Product results"
       className="
         grid
         grid-cols-1
-        gap-6
-        sm:grid-cols-2 sm:gap-7
-        lg:grid-cols-3 lg:gap-8
-        xl:grid-cols-4 xl:gap-8
+        sm:grid-cols-2
+        lg:grid-cols-3
+        2xl:grid-cols-4
+        gap-y-20
+        gap-x-10
+        lg:gap-x-14
       "
     >
       {products.map((product) => (
-        <ProductCard
+        <div
           key={product.id}
-          product={product}
-        />
+          className="
+            transition-transform duration-300
+            will-change-transform
+          "
+        >
+          <ProductCard product={product} />
+        </div>
       ))}
     </section>
   );

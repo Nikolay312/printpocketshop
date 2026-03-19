@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Button from "@/components/ui/Button";
 
 interface Props {
@@ -7,30 +6,43 @@ interface Props {
 
 export default function ShopEmptyState({ onReset }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center py-28 text-center space-y-8">
-      {/* Message */}
-      <div className="space-y-3">
-        <h3 className="text-xl font-semibold text-foreground">
-          No products match your filters
-        </h3>
-        <p className="mx-auto max-w-md text-sm text-muted">
-          Try adjusting your search or clearing some filters to
-          discover more products.
-        </p>
-      </div>
+    <div className="py-32">
+      <div
+        className="
+          mx-auto max-w-2xl
+          text-center
+          space-y-8
+          bg-[var(--surface)]
+          border border-[var(--border)]
+          rounded-[var(--radius-md)]
+          shadow-[var(--shadow-sm)]
+          px-8 py-16
+        "
+      >
+        {/* ================= Message ================= */}
+        <div className="space-y-4">
+          <p className="text-xs font-medium tracking-[0.16em] text-[var(--muted)] uppercase">
+            No results
+          </p>
 
-      {/* Actions */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Button
-          variant="secondary"
-          onClick={onReset}
-        >
-          Clear filters
-        </Button>
+          <h3 className="text-2xl font-semibold tracking-tight text-[var(--fg)]">
+            Nothing matched your selection
+          </h3>
 
-        <Link href="/shop" className="btn-primary">
-          View all products
-        </Link>
+          <p className="text-sm text-[var(--muted)] leading-relaxed max-w-md mx-auto">
+            Refine your criteria or return to the full collection to continue browsing.
+          </p>
+        </div>
+
+        {/* ================= Action ================= */}
+        <div className="flex justify-center">
+          <Button
+            variant="secondary"
+            onClick={onReset}
+          >
+            Reset selection
+          </Button>
+        </div>
       </div>
     </div>
   );
