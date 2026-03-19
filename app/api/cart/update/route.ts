@@ -2,15 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth.server";
 
+type CartItemWithProduct = {
+  id: string;
+  productId: string;
+  quantity: number;
+  license: string;
+  product: {
+    title: string;
+    slug: string;
+    price: number;
+    currency: string;
+    status: string;
+  };
+};
+
 export async function POST(req: NextRequest) {
   try {
     const userId = await getCurrentUserId();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -28,10 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!Number.isInteger(quantity) || quantity < 0 || quantity > 99) {
-      return NextResponse.json(
-        { error: "Invalid quantity" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
     }
 
     const cartItem = await prisma.cartItem.findUnique({
@@ -42,10 +50,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!cartItem || cartItem.cart.userId !== userId) {
-      return NextResponse.json(
-        { error: "Item not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
     if (quantity === 0) {
@@ -70,9 +75,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const validItems =
+    const validItems: CartItemWithProduct[] =
       cart?.items.filter(
-        (item) => item.product.status === "PUBLISHED"
+        (item: CartItemWithProduct) => item.product.status === "PUBLISHED"
       ) ?? [];
 
     let subtotal = 0;
@@ -83,7 +88,7 @@ export async function POST(req: NextRequest) {
       currency = item.product.currency;
     }
 
-    const responseItems = validItems.map((item) => ({
+    const responseItems = validItems.map((item: CartItemWithProduct) => ({
       id: item.id,
       productId: item.productId,
       title: item.product.title,
