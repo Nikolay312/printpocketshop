@@ -3,7 +3,6 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import { Prisma, AuditLevel, OrderStatus } from "@prisma/client";
 import { computeVat } from "@/lib/vat";
 import {
   sendOrderConfirmationEmail,
@@ -27,33 +26,10 @@ if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET missing");
 const stripe = new Stripe(stripeSecret);
 
 /* =========================
-   TYPES
-========================= */
-
-type OrderWithUser = Prisma.OrderGetPayload<{
-  include: { user: true };
-}>;
-
-/* =========================
-   INVOICE HELPER
-========================= */
-
-async function getNextInvoiceNumber(tx: Prisma.TransactionClient) {
-  const last = await tx.invoice.findFirst({
-    orderBy: { invoiceNumber: "desc" },
-    select: { invoiceNumber: true },
-  });
-
-  return (last?.invoiceNumber ?? 0) + 1;
-}
-
-/* =========================
    ORDER LOOKUP
 ========================= */
 
-async function findOrderForCheckoutSession(
-  session: Stripe.Checkout.Session
-): Promise<OrderWithUser | null> {
+async function findOrderForCheckoutSession(session: Stripe.Checkout.Session) {
   const paymentIntentId =
     typeof session.payment_intent === "string"
       ? session.payment_intent
@@ -89,7 +65,7 @@ async function handleSuccessfulCheckout(params: {
   if (session.payment_status !== "paid") {
     await auditLog({
       eventType: "CHECKOUT_SESSION_COMPLETED_NOT_PAID",
-      level: AuditLevel.WARN,
+      level: "WARN",
       stripeEventId: event.id,
       stripeObjectId: session.id,
       metadata: {
@@ -112,7 +88,7 @@ async function handleSuccessfulCheckout(params: {
   if (!order) {
     await auditLog({
       eventType: "ORDER_NOT_FOUND_FOR_STRIPE_SESSION",
-      level: AuditLevel.ERROR,
+      level: "ERROR",
       stripeEventId: event.id,
       stripeObjectId: session.id,
       metadata: {
@@ -134,8 +110,8 @@ async function handleSuccessfulCheckout(params: {
         throw new Error(`Order ${order.id} disappeared during webhook processing.`);
       }
 
-      const wasPending = currentOrder.status === OrderStatus.PENDING;
-      const isAlreadyPaid = currentOrder.status === OrderStatus.PAID;
+      const wasPending = currentOrder.status === "PENDING";
+      const isAlreadyPaid = currentOrder.status === "PAID";
 
       let finalOrder = currentOrder;
 
@@ -143,7 +119,7 @@ async function handleSuccessfulCheckout(params: {
         finalOrder = await tx.order.update({
           where: { id: currentOrder.id },
           data: {
-            status: OrderStatus.PAID,
+            status: "PAID",
             stripePaymentIntentId:
               currentOrder.stripePaymentIntentId ?? paymentIntentId,
           },
@@ -169,7 +145,12 @@ async function handleSuccessfulCheckout(params: {
       let createdInvoiceId: string | null = null;
 
       if (!existingInvoice) {
-        const invoiceNumber = await getNextInvoiceNumber(tx);
+        const lastInvoice = await tx.invoice.findFirst({
+          orderBy: { invoiceNumber: "desc" },
+          select: { invoiceNumber: true },
+        });
+
+        const invoiceNumber = (lastInvoice?.invoiceNumber ?? 0) + 1;
 
         const buyerCountry = billing?.address?.country ?? "UNKNOWN";
         const vat = computeVat({
@@ -212,7 +193,7 @@ async function handleSuccessfulCheckout(params: {
       };
     },
     {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      isolationLevel: "Serializable",
     }
   );
 
@@ -282,7 +263,7 @@ async function handleSuccessfulCheckout(params: {
 
     await auditLog({
       eventType: "EMAIL_SEND_FAILED",
-      level: AuditLevel.ERROR,
+      level: "ERROR",
       orderId: updated.order.id,
       metadata: { error: String(err), to: updated.order.user.email },
     });
@@ -311,7 +292,7 @@ async function handleChargeRefunded(params: {
   if (!order) {
     await auditLog({
       eventType: "REFUND_ORDER_NOT_FOUND",
-      level: AuditLevel.WARN,
+      level: "WARN",
       stripeEventId: event.id,
       stripeObjectId: charge.id,
       metadata: {
@@ -322,10 +303,10 @@ async function handleChargeRefunded(params: {
     return;
   }
 
-  if (order.status !== OrderStatus.REFUNDED) {
+  if (order.status !== "REFUNDED") {
     await prisma.order.update({
       where: { id: order.id },
-      data: { status: OrderStatus.REFUNDED },
+      data: { status: "REFUNDED" },
     });
 
     await auditLog({
@@ -361,7 +342,7 @@ async function handleChargeRefunded(params: {
 
     await auditLog({
       eventType: "EMAIL_SEND_FAILED",
-      level: AuditLevel.ERROR,
+      level: "ERROR",
       orderId: order.id,
       metadata: { error: String(err), to: order.user.email },
     });
@@ -378,7 +359,7 @@ export async function POST(req: Request) {
   if (!signature) {
     await auditLog({
       eventType: "STRIPE_WEBHOOK_SIGNATURE_MISSING",
-      level: AuditLevel.WARN,
+      level: "WARN",
     });
 
     return NextResponse.json(
@@ -399,7 +380,7 @@ export async function POST(req: Request) {
 
     await auditLog({
       eventType: "STRIPE_WEBHOOK_SIGNATURE_INVALID",
-      level: AuditLevel.WARN,
+      level: "WARN",
       metadata: { error: String(err) },
     });
 
@@ -424,10 +405,6 @@ export async function POST(req: Request) {
   });
 
   try {
-    /* =========================
-       IDEMPOTENCY GUARD
-    ========================= */
-
     try {
       await prisma.processedStripeEvent.create({
         data: { id: event.id, type: event.type },
@@ -484,7 +461,7 @@ export async function POST(req: Request) {
 
     await auditLog({
       eventType: "STRIPE_WEBHOOK_PROCESSING_FAILED",
-      level: AuditLevel.ERROR,
+      level: "ERROR",
       stripeEventId: event.id,
       stripeObjectId: stripeObject?.id,
       metadata: {
