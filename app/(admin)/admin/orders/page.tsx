@@ -2,8 +2,10 @@ import Link from "next/link";
 import { getAllOrdersForAdmin } from "@/lib/admin.server";
 import { formatPrice } from "@/lib/formatPrice";
 
+type AdminOrder = Awaited<ReturnType<typeof getAllOrdersForAdmin>>[number];
+
 export default async function AdminOrdersPage() {
-  const orders = await getAllOrdersForAdmin();
+  const orders: AdminOrder[] = await getAllOrdersForAdmin();
 
   return (
     <div className="space-y-24">
@@ -22,7 +24,6 @@ export default async function AdminOrdersPage() {
                   className="block py-8 transition hover:bg-muted/20"
                 >
                   <div className="flex items-center justify-between">
-                    {/* Left */}
                     <div className="space-y-2">
                       <div className="text-base font-medium text-foreground">
                         Order #{order.id.slice(0, 8)}
@@ -37,7 +38,6 @@ export default async function AdminOrdersPage() {
                       </div>
                     </div>
 
-                    {/* Right */}
                     <div className="flex items-center gap-8">
                       <span className="text-base font-semibold text-foreground">
                         {formatPrice(order.total)}
