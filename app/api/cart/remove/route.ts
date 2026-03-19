@@ -2,16 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth.server";
 
+type CartItemWithProduct = {
+  id: string;
+  productId: string;
+  quantity: number;
+  license: string;
+  product: {
+    title: string;
+    slug: string;
+    price: number;
+    currency: string;
+    status: string;
+  };
+};
+
 export async function POST(req: NextRequest) {
   try {
     const userId = await getCurrentUserId();
 
     if (!userId) {
       console.error("Cart REMOVE: Unauthorized request");
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -36,10 +47,7 @@ export async function POST(req: NextRequest) {
 
     if (!cartItem) {
       console.error("Cart REMOVE: Item not found", cartItemId);
-      return NextResponse.json(
-        { error: "Item not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
     if (cartItem.cart.userId !== userId) {
@@ -48,10 +56,7 @@ export async function POST(req: NextRequest) {
         owner: cartItem.cart.userId,
       });
 
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const cartId = cartItem.cartId;
@@ -83,8 +88,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const validItems = cart.items.filter(
-      (item) => item.product.status === "PUBLISHED"
+    const validItems: CartItemWithProduct[] = cart.items.filter(
+      (item: CartItemWithProduct) => item.product.status === "PUBLISHED"
     );
 
     let subtotal = 0;
@@ -95,7 +100,7 @@ export async function POST(req: NextRequest) {
       currency = item.product.currency;
     }
 
-    const responseItems = validItems.map((item) => ({
+    const responseItems = validItems.map((item: CartItemWithProduct) => ({
       id: item.id,
       productId: item.productId,
       title: item.product.title,
