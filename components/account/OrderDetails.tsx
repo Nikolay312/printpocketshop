@@ -10,9 +10,8 @@ type Props = {
 export default function OrderDetails({ order }: Props) {
   return (
     <div className="space-y-14">
-      {/* ================= HEADER ================= */}
       <header className="space-y-3">
-        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           Order #{order.id.slice(0, 8)}
         </h2>
 
@@ -26,7 +25,6 @@ export default function OrderDetails({ order }: Props) {
         </p>
       </header>
 
-      {/* ================= ITEMS ================= */}
       <section className="space-y-8">
         <div className="space-y-2">
           <h3 className="text-lg font-semibold text-foreground">
@@ -37,13 +35,12 @@ export default function OrderDetails({ order }: Props) {
           </p>
         </div>
 
-        <div className="border border-border bg-background divide-y divide-border shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-          {order.items.map((item) => (
+        <div className="divide-y divide-border border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+          {order.items.map((item: Order["items"][number]) => (
             <div
               key={item.product.id}
               className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:justify-between"
             >
-              {/* Product Info */}
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-24 shrink-0 overflow-hidden bg-surface">
                   <Image
@@ -69,42 +66,34 @@ export default function OrderDetails({ order }: Props) {
                 </div>
               </div>
 
-              {/* Price + Download */}
               <div className="flex flex-col gap-3 sm:items-end">
                 <p className="font-semibold text-foreground">
-                  {formatPrice(
-                    item.product.price * item.quantity
-                  )}
+                  {formatPrice(item.product.price * item.quantity)}
                 </p>
 
-                {item.product.fileUrl && (
-                  <a
-                    href={item.product.fileUrl}
-                    download
-                    className="inline-flex items-center text-sm font-medium text-accent hover:text-accent-hover transition-colors"
-                  >
-                    Download file
-                  </a>
-                )}
+                <Link
+                  href="/account/downloads"
+                  className="inline-flex items-center text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+                >
+                  View downloads
+                </Link>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ================= TOTAL ================= */}
       <section className="border-t border-border pt-8">
-        <div className="flex items-center justify-between text-base sm:text-lg font-semibold text-foreground">
+        <div className="flex items-center justify-between text-base font-semibold text-foreground sm:text-lg">
           <span>Total</span>
           <span>{formatPrice(order.total)}</span>
         </div>
       </section>
 
-      {/* ================= BACK LINK ================= */}
       <div>
         <Link
           href="/account/orders"
-          className="inline-flex items-center text-sm font-medium text-muted hover:text-foreground transition-colors"
+          className="inline-flex items-center text-sm font-medium text-muted transition-colors hover:text-foreground"
         >
           ← Back to orders
         </Link>
