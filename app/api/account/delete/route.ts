@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   requireUserId,
@@ -33,22 +34,13 @@ export async function POST(req: Request) {
     try {
       body = (await req.json()) as Body;
     } catch {
-      return NextResponse.json(
-        { error: "Invalid request" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    const password =
-      typeof body.password === "string"
-        ? body.password
-        : undefined;
+    const password = typeof body.password === "string" ? body.password : undefined;
 
     if (!password) {
-      return NextResponse.json(
-        { error: "Password required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Password required" }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
@@ -61,22 +53,16 @@ export async function POST(req: Request) {
     });
 
     if (!user || !user.password) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const valid = await verifyPassword(password, user.password);
 
     if (!valid) {
-      return NextResponse.json(
-        { error: "Incorrect password" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Incorrect password" }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.user.delete({
         where: { id: userId },
       });
@@ -85,13 +71,9 @@ export async function POST(req: Request) {
     await clearSession();
 
     return NextResponse.json({ ok: true });
-
   } catch (err: unknown) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     console.error("Delete account error:", err);
