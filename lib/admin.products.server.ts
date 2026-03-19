@@ -1,11 +1,15 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import type {
-  Currency,
-  ProductFormat,
-  ProductStatus,
-  Category,
-} from "@prisma/client";
+
+type Currency = "EUR" | "USD" | "BGN";
+type ProductFormat = "PDF" | "PNG" | "JPG" | "CANVA";
+type ProductStatus = "DRAFT" | "PUBLISHED";
+
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+};
 
 /* =========================
    ADMIN PRODUCTS LIST
@@ -43,13 +47,13 @@ export async function getAdminProducts(): Promise<AdminProductRow[]> {
     },
   });
 
-  return products.map((p) => ({
+  return products.map((p: (typeof products)[number]) => ({
     id: p.id,
     title: p.title,
     price: p.price,
-    currency: p.currency,
-    status: p.status,
-    format: p.format,
+    currency: p.currency as Currency,
+    status: p.status as ProductStatus,
+    format: p.format as ProductFormat,
     category: p.category,
     createdAt: p.createdAt.toISOString(),
   }));
@@ -117,11 +121,11 @@ export async function getAdminProductById(id: string) {
 
   return {
     ...product,
-
-    // Convert relation → string[] for ProductForm
-    previewImages: product.previewImages.map((img) => img.fileKey),
-
-    // Convert files relation → string[] for ProductForm
-    files: product.files.map((file) => file.fileKey),
+    previewImages: product.previewImages.map(
+      (img: (typeof product.previewImages)[number]) => img.fileKey
+    ),
+    files: product.files.map(
+      (file: (typeof product.files)[number]) => file.fileKey
+    ),
   };
 }
