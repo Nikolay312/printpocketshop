@@ -14,7 +14,7 @@ export async function getTotalRevenue() {
     },
   });
 
-  return result.map((r) => ({
+  return result.map((r: (typeof result)[number]) => ({
     currency: r.currency,
     total: r._sum.total ?? 0,
   }));
@@ -37,7 +37,7 @@ export async function getRevenueOverTime() {
   const byDay = new Map<string, number>();
 
   for (const order of orders) {
-    const day = order.createdAt.toISOString().slice(0, 10); // YYYY-MM-DD
+    const day = order.createdAt.toISOString().slice(0, 10);
     byDay.set(day, (byDay.get(day) ?? 0) + order.total);
   }
 
@@ -157,7 +157,7 @@ export async function getTotalUpgradeRevenue() {
     },
   });
 
-  return result.map((r) => ({
+  return result.map((r: (typeof result)[number]) => ({
     currency: r.currency,
     total: r._sum.deltaCents ?? 0,
   }));
