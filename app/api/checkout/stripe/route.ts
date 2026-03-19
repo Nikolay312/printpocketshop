@@ -310,7 +310,7 @@ export async function POST(req: Request) {
     }
 
     const validItems = cart.items.filter(
-      (item) => item.product.status === "PUBLISHED"
+      (item: (typeof cart.items)[number]) => item.product.status === "PUBLISHED"
     );
 
     if (validItems.length === 0) {
