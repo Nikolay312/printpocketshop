@@ -3,17 +3,11 @@ export const runtime = "nodejs";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { Currency } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth.server";
 import { enforceIpRateLimit } from "@/lib/rateLimit";
 import { auditLog } from "@/lib/audit.server";
-import {
-  AuditActorType,
-  AuditLevel,
-  Currency,
-  DiscountType,
-  ProductLicense,
-} from "@prisma/client";
 import * as Sentry from "@sentry/nextjs";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -23,10 +17,10 @@ if (!stripeSecret) {
 
 const stripe = new Stripe(stripeSecret);
 
-type CartItemWithProduct = {
+type CartItemLike = {
   productId: string;
   quantity: number;
-  license: ProductLicense;
+  license: string;
   product: {
     price: number;
     currency: Currency;
@@ -36,13 +30,13 @@ type CartItemWithProduct = {
   };
 };
 
-function getCartSubtotal(items: CartItemWithProduct[]) {
+function getCartSubtotal<T extends CartItemLike>(items: T[]) {
   return items.reduce((sum, item) => {
     return sum + item.product.price * item.quantity;
   }, 0);
 }
 
-function getCartCurrency(items: CartItemWithProduct[]) {
+function getCartCurrency<T extends CartItemLike>(items: T[]) {
   if (items.length === 0) return null;
 
   const first = items[0].product.currency;
@@ -57,7 +51,7 @@ function getCartCurrency(items: CartItemWithProduct[]) {
 
 function getDiscountAmount(params: {
   subtotal: number;
-  discountType: DiscountType;
+  discountType: string;
   percentOff: number | null;
   amountOff: number | null;
 }) {
@@ -89,8 +83,8 @@ function normalizeAppUrl(url: string) {
  *
  * We flatten to unit rows, distribute cents proportionally, then regroup.
  */
-function buildDiscountedLineItems(params: {
-  items: CartItemWithProduct[];
+function buildDiscountedLineItems<T extends CartItemLike>(params: {
+  items: T[];
   currency: Currency;
   discountAmount: number;
 }): Stripe.Checkout.SessionCreateParams.LineItem[] {
@@ -147,7 +141,10 @@ function buildDiscountedLineItems(params: {
 
   let distributed = 0;
   for (let i = 0; i < flatUnits.length; i += 1) {
-    const amount = Math.min(proportionalDiscounts[i].floorShare, flatUnits[i].adjustedUnitAmount);
+    const amount = Math.min(
+      proportionalDiscounts[i].floorShare,
+      flatUnits[i].adjustedUnitAmount
+    );
     flatUnits[i].adjustedUnitAmount -= amount;
     distributed += amount;
   }
@@ -221,7 +218,7 @@ function regroupFlatUnitsToLineItems(
   return Array.from(grouped.values()).map((group) => ({
     quantity: group.quantity,
     price_data: {
-      currency: currency.toLowerCase(),
+      currency: groupCurrencyForStripe(currency),
       unit_amount: group.unitAmount,
       product_data: {
         name: group.name,
@@ -231,7 +228,11 @@ function regroupFlatUnitsToLineItems(
   }));
 }
 
-function createCheckoutFingerprint(params: {
+function groupCurrencyForStripe(currency: Currency): Lowercase<string> {
+  return currency.toLowerCase() as Lowercase<string>;
+}
+
+function createCheckoutFingerprint<T extends CartItemLike>(params: {
   userId: string;
   cartId: string;
   currency: Currency;
@@ -239,7 +240,7 @@ function createCheckoutFingerprint(params: {
   discountAmount: number;
   total: number;
   appliedDiscountCodeId: string | null;
-  items: CartItemWithProduct[];
+  items: T[];
 }) {
   const payload = JSON.stringify({
     userId: params.userId,
@@ -273,10 +274,6 @@ export async function POST(req: Request) {
 
     const appUrl = normalizeAppUrl(rawAppUrl);
 
-    /* =========================
-       IP RATE LIMIT
-    ========================= */
-
     const ipLimit = await enforceIpRateLimit({
       headers: req.headers,
       routeKey: "checkout:create",
@@ -286,18 +283,10 @@ export async function POST(req: Request) {
 
     if (!ipLimit.allowed) return ipLimit.response;
 
-    /* =========================
-       AUTH
-    ========================= */
-
     const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    /* =========================
-       USER RATE LIMIT
-    ========================= */
 
     const userLimit = await enforceIpRateLimit({
       headers: req.headers,
@@ -307,10 +296,6 @@ export async function POST(req: Request) {
     });
 
     if (!userLimit.allowed) return userLimit.response;
-
-    /* =========================
-       LOAD CART FROM DB
-    ========================= */
 
     const cart = await prisma.cart.findUnique({
       where: { userId },
@@ -330,7 +315,7 @@ export async function POST(req: Request) {
 
     const validItems = cart.items.filter(
       (item) => item.product.status === "PUBLISHED"
-    ) as CartItemWithProduct[];
+    );
 
     if (validItems.length === 0) {
       return NextResponse.json(
@@ -346,10 +331,6 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =========================
-       CURRENCY VALIDATION
-    ========================= */
-
     const currency = getCartCurrency(validItems);
     if (!currency) {
       return NextResponse.json(
@@ -359,10 +340,6 @@ export async function POST(req: Request) {
     }
 
     const subtotal = getCartSubtotal(validItems);
-
-    /* =========================
-       VALIDATE APPLIED DISCOUNT
-    ========================= */
 
     let appliedDiscountCodeId: string | null = null;
     let appliedDiscountCode: string | null = null;
@@ -447,10 +424,6 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =========================
-       BUILD STRIPE LINE ITEMS
-    ========================= */
-
     const line_items = buildDiscountedLineItems({
       items: validItems,
       currency,
@@ -458,10 +431,7 @@ export async function POST(req: Request) {
     });
 
     const computedStripeTotal = line_items.reduce((sum, item) => {
-      const unitAmount =
-        item.price_data?.unit_amount ??
-        0;
-
+      const unitAmount = item.price_data?.unit_amount ?? 0;
       return sum + unitAmount * (item.quantity ?? 1);
     }, 0);
 
@@ -470,10 +440,6 @@ export async function POST(req: Request) {
         `Stripe total mismatch. Expected ${total}, got ${computedStripeTotal}.`
       );
     }
-
-    /* =========================
-       CREATE DETERMINISTIC IDEMPOTENCY KEY
-    ========================= */
 
     const checkoutFingerprint = createCheckoutFingerprint({
       userId,
@@ -487,10 +453,6 @@ export async function POST(req: Request) {
     });
 
     const idempotencyKey = `checkout:${checkoutFingerprint}`;
-
-    /* =========================
-       CREATE STRIPE SESSION
-    ========================= */
 
     const session = await stripe.checkout.sessions.create(
       {
@@ -518,46 +480,38 @@ export async function POST(req: Request) {
       throw new Error("Stripe Checkout session was created without a redirect URL.");
     }
 
-    /* =========================
-       CREATE PENDING ORDER
-    ========================= */
-
-const order = await prisma.order.create({
-  data: {
-    stripeSessionId: session.id,
-    stripePaymentIntentId:
-      typeof session.payment_intent === "string"
-        ? session.payment_intent
-        : undefined,
-    userId,
-    subtotal,
-    discountAmount,
-    discountCodeId: appliedDiscountCodeId,
-    total,
-    currency,
-    status: "PENDING",
-    items: {
-      create: validItems.map((item) => ({
-        product: {
-          connect: {
-            id: item.productId,
-          },
+    const order = await prisma.order.create({
+      data: {
+        stripeSessionId: session.id,
+        stripePaymentIntentId:
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : undefined,
+        userId,
+        subtotal,
+        discountAmount,
+        discountCodeId: appliedDiscountCodeId,
+        total,
+        currency,
+        status: "PENDING",
+        items: {
+          create: validItems.map((item) => ({
+            product: {
+              connect: {
+                id: item.productId,
+              },
+            },
+            quantity: item.quantity,
+            price: item.product.price,
+            license: item.license,
+          })),
         },
-        quantity: item.quantity,
-        price: item.product.price,
-        license: item.license,
-      })),
-    },
-  },
-});
-
-    /* =========================
-       AUDIT
-    ========================= */
+      },
+    });
 
     await auditLog({
       eventType: "CHECKOUT_SESSION_CREATED",
-      actorType: AuditActorType.USER,
+      actorType: "USER",
       actorId: userId,
       orderId: order.id,
       stripeObjectId: session.id,
@@ -578,13 +532,10 @@ const order = await prisma.order.create({
 
     await auditLog({
       eventType: "CHECKOUT_FAILED",
-      level: AuditLevel.ERROR,
+      level: "ERROR",
       metadata: { error: String(err) },
     });
 
-    return NextResponse.json(
-      { error: "Checkout failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Checkout failed" }, { status: 500 });
   }
 }
