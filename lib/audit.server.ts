@@ -1,13 +1,23 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
-import {
-  AuditActorType,
-  AuditLevel,
-  Currency,
-} from "@prisma/client";
 import * as Sentry from "@sentry/nextjs";
+
+/* =========================
+   SAFE LOCAL TYPES
+========================= */
+
+type AuditActorType = "SYSTEM" | "USER" | "ADMIN";
+type AuditLevel = "INFO" | "WARN" | "ERROR" | "CRITICAL";
+type Currency = "EUR" | "USD" | "BGN";
+
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonValue }
+  | JsonValue[];
 
 /* =========================
    TYPES
@@ -16,14 +26,11 @@ import * as Sentry from "@sentry/nextjs";
 type AuditParams = {
   eventType: string;
 
-  // Actor
-  actorType?: AuditActorType; // SYSTEM | USER | ADMIN
+  actorType?: AuditActorType;
   actorId?: string;
 
-  // Severity
   level?: AuditLevel;
 
-  // Entity linkage
   orderId?: string;
   invoiceId?: string;
   licenseUpgradeId?: string;
@@ -31,12 +38,10 @@ type AuditParams = {
   stripeEventId?: string;
   stripeObjectId?: string;
 
-  // Financial metadata
   amountCents?: number;
   currency?: Currency;
 
-  // Arbitrary structured data
-  metadata?: Prisma.InputJsonValue;
+  metadata?: JsonValue;
 };
 
 /* =========================
@@ -82,11 +87,10 @@ export async function auditLog(
 
     await prisma.financialAuditLog.create({
       data: {
-        actorType:
-          data.actorType ?? AuditActorType.SYSTEM,
+        actorType: data.actorType ?? "SYSTEM",
         actorId: data.actorId,
 
-        level: data.level ?? AuditLevel.INFO,
+        level: data.level ?? "INFO",
         eventType: data.eventType,
 
         orderId: data.orderId,
@@ -103,10 +107,7 @@ export async function auditLog(
       },
     });
   } catch (err) {
-    // 🔐 Never break financial flows due to audit failure
     console.error("Audit log failed:", err);
-
-    // Audit failure itself is critical
     Sentry.captureException(err);
   }
 }
