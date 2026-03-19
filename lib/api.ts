@@ -71,7 +71,6 @@ export const getProductBySlug = async (
   return mapDbProductToProduct(product);
 };
 
-
 /* =========================
    CATEGORIES (SERVER)
 ========================= */
@@ -81,13 +80,12 @@ export const getAllCategories = async () => {
     orderBy: { name: "asc" },
   });
 
-  return categories.map((c) => ({
+  return categories.map((c: (typeof categories)[number]) => ({
     id: c.id,
     name: c.name,
     slug: c.slug,
   }));
 };
-
 
 /* =========================
    SHOP (SERVER)
