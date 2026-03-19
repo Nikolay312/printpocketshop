@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Product } from "@/types/product";
 import { formatDate } from "@/lib/formatDate";
 
-type PurchasedDownloadItem = {
+export type PurchasedDownloadItem = {
   orderId: string;
   purchasedAt: string;
   quantity?: number;

@@ -1,11 +1,12 @@
 "use client";
 
-import DownloadItem from "@/components/account/downloadItem";
-import type { Product } from "@/types/product";
 import Link from "next/link";
+import DownloadItem, {
+  type PurchasedDownloadItem,
+} from "@/components/account/downloadItem";
 
 type Props = {
-  products: Product[];
+  products: PurchasedDownloadItem[];
 };
 
 export default function DownloadsList({ products }: Props) {
@@ -37,8 +38,11 @@ export default function DownloadsList({ products }: Props) {
 
   return (
     <div className="space-y-6">
-      {products.map((product) => (
-        <DownloadItem key={product.id} product={product} />
+      {products.map((product: PurchasedDownloadItem) => (
+        <DownloadItem
+          key={`${product.orderId}-${product.product?.id ?? "missing"}`}
+          item={product}
+        />
       ))}
     </div>
   );
