@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ProductFormat, ProductStatus } from "@prisma/client";
 
 /* =========================
    TYPES
 ========================= */
+
+type ProductFormat = "PDF" | "PNG" | "JPG" | "CANVA";
+type ProductStatus = "DRAFT" | "PUBLISHED";
 
 export type AdminProductFormData = {
   title: string;
@@ -122,7 +124,7 @@ export default function ProductForm({
           throw new Error("Preview upload failed");
         }
 
-        const { url } = await res.json();
+        const { url } = (await res.json()) as { url: string };
         setPreviewImages((prev) => [...prev, url]);
       }
     } catch (err) {
@@ -149,7 +151,7 @@ export default function ProductForm({
           throw new Error("File upload failed");
         }
 
-        const { fileKey } = await res.json();
+        const { fileKey } = (await res.json()) as { fileKey: string };
         setProductFiles((prev) => [...prev, fileKey]);
       }
     } catch (err) {
@@ -164,7 +166,7 @@ export default function ProductForm({
      SUBMIT
   ========================= */
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const euros = Number(priceEuros);
@@ -194,7 +196,7 @@ export default function ProductForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <input
-        className="border p-2 w-full"
+        className="w-full border p-2"
         placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -202,7 +204,7 @@ export default function ProductForm({
       />
 
       <textarea
-        className="border p-2 w-full min-h-[160px]"
+        className="min-h-[160px] w-full border p-2"
         placeholder="Product description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
@@ -213,7 +215,7 @@ export default function ProductForm({
           Price (EUR)
         </label>
         <input
-          className="border p-2 w-full"
+          className="w-full border p-2"
           type="number"
           min={0}
           step="0.01"
@@ -226,13 +228,13 @@ export default function ProductForm({
       </div>
 
       <select
-        className="border p-2 w-full"
+        className="w-full border p-2"
         value={categoryId}
         onChange={(e) => setCategoryId(e.target.value)}
         required
       >
         <option value="">Select category</option>
-        {categories.map((c) => (
+        {categories.map((c: Category) => (
           <option key={c.id} value={c.id}>
             {c.name}
           </option>
@@ -240,22 +242,35 @@ export default function ProductForm({
       </select>
 
       <select
-        className="border p-2 w-full"
+        className="w-full border p-2"
         value={status}
-        onChange={(e) =>
-          setStatus(e.target.value as ProductStatus)
-        }
+        onChange={(e) => setStatus(e.target.value as ProductStatus)}
       >
         <option value="DRAFT">Draft</option>
         <option value="PUBLISHED" disabled={productFiles.length === 0}>
           Published{" "}
-          {productFiles.length === 0
-            ? "(upload file first)"
-            : ""}
+          {productFiles.length === 0 ? "(upload file first)" : ""}
         </option>
       </select>
 
-      {/* PREVIEW IMAGES */}
+      <select
+        className="w-full border p-2"
+        value={format ?? ""}
+        onChange={(e) =>
+          setFormat(
+            e.target.value === ""
+              ? undefined
+              : (e.target.value as ProductFormat)
+          )
+        }
+      >
+        <option value="">Select format</option>
+        <option value="PDF">PDF</option>
+        <option value="PNG">PNG</option>
+        <option value="JPG">JPG</option>
+        <option value="CANVA">CANVA</option>
+      </select>
+
       <div className="space-y-2">
         <input
           type="file"
@@ -273,7 +288,7 @@ export default function ProductForm({
 
         {previewImages.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
-            {previewImages.map((img, index) => (
+            {previewImages.map((img: string, index: number) => (
               <div
                 key={img}
                 draggable
@@ -292,11 +307,11 @@ export default function ProductForm({
                 }}
                 className="relative cursor-move"
               >
-                <img src={img} className="border rounded" alt="" />
+                <img src={img} className="rounded border" alt="" />
 
                 <button
                   type="button"
-                  className="absolute top-1 right-1 bg-black/70 text-white text-xs px-2 py-1 rounded"
+                  className="absolute right-1 top-1 rounded bg-black/70 px-2 py-1 text-xs text-white"
                   onClick={() =>
                     setPreviewImages((prev) =>
                       prev.filter((_, i) => i !== index)
@@ -311,7 +326,6 @@ export default function ProductForm({
         )}
       </div>
 
-      {/* PRODUCT FILES */}
       <div className="space-y-2">
         <input
           type="file"
@@ -328,18 +342,18 @@ export default function ProductForm({
         />
 
         {productFiles.length > 0 && (
-          <ul className="text-sm space-y-1">
-            {productFiles.map((key, index) => (
+          <ul className="space-y-1 text-sm">
+            {productFiles.map((key: string, index: number) => (
               <li
                 key={key}
-                className="flex items-center justify-between border p-2 rounded"
+                className="flex items-center justify-between rounded border p-2"
               >
                 <span className="truncate">
                   {key.split("/").pop()}
                 </span>
                 <button
                   type="button"
-                  className="text-red-600 text-xs"
+                  className="text-xs text-red-600"
                   onClick={() =>
                     setProductFiles((prev) =>
                       prev.filter((_, i) => i !== index)
