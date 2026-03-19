@@ -2,7 +2,6 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth.server";
 import { checkRateLimit } from "@/lib/rateLimit";
@@ -41,7 +40,7 @@ export async function GET(
       productId,
       order: {
         userId,
-        status: OrderStatus.PAID,
+        status: "PAID",
       },
     },
     select: { id: true },
