@@ -2,6 +2,20 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth.server";
 
+type CartItemWithProduct = {
+  id: string;
+  productId: string;
+  quantity: number;
+  license: string;
+  product: {
+    title: string;
+    slug: string;
+    price: number;
+    currency: string;
+    status: string;
+  };
+};
+
 export async function GET() {
   try {
     const userId = await getCurrentUserId();
@@ -40,8 +54,8 @@ export async function GET() {
       });
     }
 
-    const validItems = cart.items.filter(
-      (item) => item.product.status === "PUBLISHED"
+    const validItems: CartItemWithProduct[] = cart.items.filter(
+      (item: CartItemWithProduct) => item.product.status === "PUBLISHED"
     );
 
     let subtotal = 0;
@@ -52,7 +66,7 @@ export async function GET() {
       currency = item.product.currency;
     }
 
-    const responseItems = validItems.map((item) => ({
+    const responseItems = validItems.map((item: CartItemWithProduct) => ({
       id: item.id,
       productId: item.productId,
       title: item.product.title,
