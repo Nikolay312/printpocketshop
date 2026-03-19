@@ -2,8 +2,17 @@ import { prisma } from "@/lib/prisma";
 import { toggleAdminProductFeatured } from "@/lib/admin.products.actions";
 import { revalidatePath } from "next/cache";
 
+type AdminUpdateProduct = {
+  id: string;
+  title: string;
+  isFeatured: boolean;
+  category: {
+    name: string;
+  };
+};
+
 export default async function AdminUpdatesPage() {
-  const products = await prisma.product.findMany({
+  const products: AdminUpdateProduct[] = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       category: true,
