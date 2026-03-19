@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   requireUserId,
@@ -37,7 +36,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    const password = typeof body.password === "string" ? body.password : undefined;
+    const password =
+      typeof body.password === "string" ? body.password : undefined;
 
     if (!password) {
       return NextResponse.json({ error: "Password required" }, { status: 400 });
@@ -62,10 +62,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Incorrect password" }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.user.delete({
-        where: { id: userId },
-      });
+    await prisma.user.delete({
+      where: { id: userId },
     });
 
     await clearSession();
