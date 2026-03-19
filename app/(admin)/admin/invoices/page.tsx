@@ -2,10 +2,30 @@ import { requireAdminUser } from "@/lib/auth.server";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/formatPrice";
 
+type AdminInvoice = {
+  id: string;
+  invoiceNumber: number;
+  issuedAt: Date;
+  netAmount: number;
+  vatAmount: number;
+  grossAmount: number;
+  currency: string;
+  refundedAt: Date | null;
+  user: {
+    email: string;
+  };
+  order: {
+    id: string;
+  } | null;
+  licenseUpgrade: {
+    id: string;
+  } | null;
+};
+
 export default async function AdminInvoicesPage() {
   await requireAdminUser();
 
-  const invoices = await prisma.invoice.findMany({
+  const invoices: AdminInvoice[] = await prisma.invoice.findMany({
     orderBy: { issuedAt: "desc" },
     include: {
       user: {
@@ -28,7 +48,6 @@ export default async function AdminInvoicesPage() {
 
   return (
     <div className="space-y-24">
-      {/* ================= TABLE SURFACE ================= */}
       <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="px-16 py-16">
           <div className="overflow-x-auto">
@@ -52,8 +71,8 @@ export default async function AdminInvoicesPage() {
                   const type = invoice.order
                     ? "Order"
                     : invoice.licenseUpgrade
-                    ? "License upgrade"
-                    : "—";
+                      ? "License upgrade"
+                      : "—";
 
                   return (
                     <tr key={invoice.id} className="hover:bg-muted/20 transition">
