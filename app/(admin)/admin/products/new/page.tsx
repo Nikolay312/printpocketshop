@@ -5,6 +5,8 @@ import ProductForm, {
 } from "@/components/admin/ProductForm";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewProductPage() {
   const categories = await getAdminCategories();
 
@@ -18,7 +20,7 @@ export default async function NewProductPage() {
       format: data.format,
       categoryId: data.categoryId,
       status: data.status,
-      files: data.files, // ✅ FIXED
+      files: data.files,
       previewImages: data.previewImages ?? [],
     });
 
@@ -26,7 +28,7 @@ export default async function NewProductPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10 space-y-6">
+    <main className="mx-auto max-w-4xl space-y-6 px-6 py-10">
       <h1 className="text-2xl font-bold">Create Product</h1>
 
       <ProductForm
