@@ -1,10 +1,28 @@
 import "server-only";
 
-import { OrderStatus, ProductLicense } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { mapDbProductToProduct } from "@/lib/mappers/productMapper";
 import type { Order } from "@/types/order";
 import type { PurchasedProduct } from "@/types/product";
+
+type OrderStatus = "PENDING" | "PAID" | "REFUNDED" | "EXPIRED";
+type ProductLicense = "PERSONAL" | "COMMERCIAL";
+
+type DbOrderProduct = Parameters<typeof mapDbProductToProduct>[0];
+
+type DbOrderItem = {
+  quantity: number;
+  license: ProductLicense;
+  product: DbOrderProduct | null;
+};
+
+type DbOrderWithItems = {
+  id: string;
+  createdAt: Date;
+  total: number;
+  status: OrderStatus;
+  items: DbOrderItem[];
+};
 
 /* =========================
    Helpers
@@ -43,10 +61,12 @@ export async function getOrderForUser(userId: string, orderId: string) {
 
   if (!order) return null;
 
+  const typedOrder = order as DbOrderWithItems;
+
   return {
-    ...order,
-    createdAt: order.createdAt.toISOString(),
-    items: order.items.map((item) => ({
+    ...typedOrder,
+    createdAt: typedOrder.createdAt.toISOString(),
+    items: typedOrder.items.map((item: DbOrderItem) => ({
       quantity: item.quantity,
       license: item.license,
       product: mapPurchasedProduct(item.product),
@@ -76,12 +96,14 @@ export async function getOrdersForUser(userId: string): Promise<Order[]> {
     },
   });
 
-  return orders.map((order) => ({
+  const typedOrders = orders as DbOrderWithItems[];
+
+  return typedOrders.map((order: DbOrderWithItems) => ({
     id: order.id,
     createdAt: order.createdAt.toISOString(),
     total: order.total,
     status: order.status,
-    items: order.items.map((item) => ({
+    items: order.items.map((item: DbOrderItem) => ({
       quantity: item.quantity,
       license: item.license,
       product: mapPurchasedProduct(item.product),
@@ -97,7 +119,7 @@ export async function getPurchasedProductsForUser(
   userId: string
 ): Promise<PurchasedProduct[]> {
   const orders = await prisma.order.findMany({
-    where: { userId, status: OrderStatus.PAID },
+    where: { userId, status: "PAID" },
     orderBy: { createdAt: "desc" },
     include: {
       items: {
@@ -113,12 +135,14 @@ export async function getPurchasedProductsForUser(
     },
   });
 
-  return orders.flatMap((order) =>
-    order.items.map((item) => ({
+  const typedOrders = orders as DbOrderWithItems[];
+
+  return typedOrders.flatMap((order: DbOrderWithItems) =>
+    order.items.map((item: DbOrderItem) => ({
       orderId: order.id,
       purchasedAt: order.createdAt.toISOString(),
       quantity: item.quantity,
-      license: item.license as ProductLicense,
+      license: item.license,
       product: mapPurchasedProduct(item.product),
     }))
   ) as PurchasedProduct[];
