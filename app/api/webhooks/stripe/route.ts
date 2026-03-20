@@ -14,16 +14,26 @@ import { auditLog } from "@/lib/audit.server";
 import * as Sentry from "@sentry/nextjs";
 
 /* =========================
-   STRIPE INIT
+   STRIPE (LAZY INIT)
 ========================= */
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+function getStripe() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecret) {
+    throw new Error("STRIPE_SECRET_KEY missing");
+  }
 
-if (!stripeSecret) throw new Error("STRIPE_SECRET_KEY missing");
-if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET missing");
+  return new Stripe(stripeSecret);
+}
 
-const stripe = new Stripe(stripeSecret);
+function getWebhookSecret() {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET missing");
+  }
+
+  return webhookSecret;
+}
 
 type Currency = "EUR" | "USD" | "BGN";
 
@@ -388,6 +398,9 @@ async function handleChargeRefunded(params: {
 ========================= */
 
 export async function POST(req: Request) {
+  const stripe = getStripe();
+  const webhookSecret = getWebhookSecret();
+
   const signature = req.headers.get("stripe-signature");
 
   if (!signature) {
@@ -410,7 +423,7 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(
       rawBody,
       signature,
-      webhookSecret!
+      webhookSecret
     );
   } catch (err) {
     const rateLimited = await rateLimitInvalidStripeAttempt(req);
@@ -457,14 +470,7 @@ export async function POST(req: Request) {
     }
 
     switch (event.type) {
-      case "checkout.session.completed": {
-        await handleSuccessfulCheckout({
-          event,
-          session: event.data.object as Stripe.Checkout.Session,
-        });
-        break;
-      }
-
+      case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded": {
         await handleSuccessfulCheckout({
           event,
@@ -493,9 +499,7 @@ export async function POST(req: Request) {
       await prisma.processedStripeEvent.delete({
         where: { id: event.id },
       });
-    } catch {
-      // Best effort only. If this fails, Stripe may not retry safely.
-    }
+    } catch {}
 
     await auditLog({
       eventType: "STRIPE_WEBHOOK_PROCESSING_FAILED",
