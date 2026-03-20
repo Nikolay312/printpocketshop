@@ -16,17 +16,26 @@ if (!stripeSecret) {
 
 const stripe = new Stripe(stripeSecret);
 
+type Currency = "EUR" | "USD" | "BGN";
+
 type CartItemLike = {
   productId: string;
   quantity: number;
   license: string;
   product: {
     price: number;
-    currency: string;
+    currency: Currency;
     status: "DRAFT" | "PUBLISHED";
     title: string;
     description: string | null;
   };
+};
+
+type GroupedLineItem = {
+  name: string;
+  description: string | null;
+  unitAmount: number;
+  quantity: number;
 };
 
 function getCartSubtotal<T extends CartItemLike>(items: T[]) {
@@ -41,7 +50,9 @@ function getCartCurrency<T extends CartItemLike>(
   if (items.length === 0) return null;
 
   const first = items[0].product.currency;
-  const hasMixedCurrencies = items.some((item) => item.product.currency !== first);
+  const hasMixedCurrencies = items.some(
+    (item: T) => item.product.currency !== first
+  );
 
   if (hasMixedCurrencies) {
     throw new Error("Cart contains mixed currencies.");
@@ -115,7 +126,11 @@ function buildDiscountedLineItems<
     return regroupFlatUnitsToLineItems(flatUnits, currency);
   }
 
-  const subtotal = flatUnits.reduce((sum, unit) => sum + unit.originalUnitAmount, 0);
+  const subtotal = flatUnits.reduce(
+    (sum, unit) => sum + unit.originalUnitAmount,
+    0
+  );
+
   if (subtotal <= 0) {
     throw new Error("Invalid cart subtotal.");
   }
@@ -133,6 +148,7 @@ function buildDiscountedLineItems<
   });
 
   let distributed = 0;
+
   for (let i = 0; i < flatUnits.length; i += 1) {
     const amount = Math.min(
       proportionalDiscounts[i].floorShare,
@@ -172,7 +188,7 @@ function buildDiscountedLineItems<
   return regroupFlatUnitsToLineItems(flatUnits, currency);
 }
 
-function regroupFlatUnitsToLineItems<C extends string>(
+function regroupFlatUnitsToLineItems<C extends Currency>(
   flatUnits: Array<{
     key: string;
     title: string;
@@ -181,15 +197,7 @@ function regroupFlatUnitsToLineItems<C extends string>(
   }>,
   currency: C
 ): Stripe.Checkout.SessionCreateParams.LineItem[] {
-  const grouped = new Map<
-    string,
-    {
-      name: string;
-      description: string | null;
-      unitAmount: number;
-      quantity: number;
-    }
-  >();
+  const grouped = new Map<string, GroupedLineItem>();
 
   for (const unit of flatUnits) {
     const groupKey = `${unit.key}:${unit.adjustedUnitAmount}`;
@@ -208,20 +216,24 @@ function regroupFlatUnitsToLineItems<C extends string>(
     });
   }
 
-  return Array.from(grouped.values()).map((group) => ({
-    quantity: group.quantity,
-    price_data: {
-      currency: groupCurrencyForStripe(currency),
-      unit_amount: group.unitAmount,
-      product_data: {
-        name: group.name,
-        description: group.description ?? undefined,
+  return Array.from(grouped.values()).map(
+    (group: GroupedLineItem) => ({
+      quantity: group.quantity,
+      price_data: {
+        currency: groupCurrencyForStripe(currency),
+        unit_amount: group.unitAmount,
+        product_data: {
+          name: group.name,
+          description: group.description ?? undefined,
+        },
       },
-    },
-  }));
+    })
+  );
 }
 
-function groupCurrencyForStripe<C extends string>(currency: C): Lowercase<C> {
+function groupCurrencyForStripe<C extends Currency>(
+  currency: C
+): Lowercase<C> {
   return currency.toLowerCase() as Lowercase<C>;
 }
 
@@ -246,7 +258,7 @@ function createCheckoutFingerprint<
     discountAmount: params.discountAmount,
     total: params.total,
     appliedDiscountCodeId: params.appliedDiscountCodeId,
-    items: params.items.map((item) => ({
+    items: params.items.map((item: T) => ({
       productId: item.productId,
       license: item.license,
       quantity: item.quantity,
@@ -310,8 +322,16 @@ export async function POST(req: Request) {
     }
 
     const validItems = cart.items.filter(
-      (item: (typeof cart.items)[number]) => item.product.status === "PUBLISHED"
-    );
+      (item: (typeof cart.items)[number]) =>
+        item.product.status === "PUBLISHED"
+    ) as Array<
+      (typeof cart.items)[number] & {
+        product: (typeof cart.items)[number]["product"] & {
+          currency: Currency;
+          status: "DRAFT" | "PUBLISHED";
+        };
+      }
+    >;
 
     if (validItems.length === 0) {
       return NextResponse.json(
@@ -473,7 +493,9 @@ export async function POST(req: Request) {
     );
 
     if (!session.url) {
-      throw new Error("Stripe Checkout session was created without a redirect URL.");
+      throw new Error(
+        "Stripe Checkout session was created without a redirect URL."
+      );
     }
 
     const order = await prisma.order.create({
