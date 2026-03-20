@@ -3,20 +3,34 @@ import "server-only";
 import { Resend } from "resend";
 
 /* =========================
-   ENV VALIDATION
+   ENV HELPERS
 ========================= */
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-if (!RESEND_API_KEY) {
-  throw new Error("RESEND_API_KEY is not set");
+function getRequiredMailEnv() {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!resendApiKey) {
+    throw new Error("RESEND_API_KEY is not set");
+  }
+
+  if (!appUrl) {
+    throw new Error("NEXT_PUBLIC_APP_URL is not set");
+  }
+
+  return { resendApiKey, appUrl };
 }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
-if (!APP_URL) {
-  throw new Error("NEXT_PUBLIC_APP_URL is not set");
-}
+let resendClient: Resend | null = null;
 
-const resend = new Resend(RESEND_API_KEY);
+function getResendClient() {
+  if (resendClient) return resendClient;
+
+  const { resendApiKey } = getRequiredMailEnv();
+  resendClient = new Resend(resendApiKey);
+
+  return resendClient;
+}
 
 const FROM_EMAIL = "PrintPocketShop <no-reply@printpocketshop.com>";
 
@@ -71,6 +85,8 @@ async function sendEmail(params: {
   html: string;
   replyTo?: string;
 }): Promise<EmailResult> {
+  const resend = getResendClient();
+
   const response = await resend.emails.send({
     from: FROM_EMAIL,
     to: params.to,
@@ -78,9 +94,6 @@ async function sendEmail(params: {
     html: params.html,
     ...(params.replyTo ? { reply_to: params.replyTo } : {}),
   });
-
-  // Resend returns:
-  // { data: { id: string } | null, error: {...} | null }
 
   if (response.error) {
     throw new Error(
@@ -102,9 +115,8 @@ export async function sendPasswordResetEmail({
   email,
   token,
 }: PasswordResetEmailParams): Promise<EmailResult> {
-  const resetUrl = `${APP_URL}/reset-password?token=${encodeURIComponent(
-    token
-  )}`;
+  const { appUrl } = getRequiredMailEnv();
+  const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
 
   return sendEmail({
     to: email,
@@ -121,9 +133,8 @@ export async function sendEmailVerification({
   email,
   token,
 }: EmailVerificationParams): Promise<EmailResult> {
-  const verifyUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(
-    token
-  )}`;
+  const { appUrl } = getRequiredMailEnv();
+  const verifyUrl = `${appUrl}/verify-email?token=${encodeURIComponent(token)}`;
 
   return sendEmail({
     to: email,
@@ -143,7 +154,8 @@ export async function sendOrderConfirmationEmail({
   total,
   currency,
 }: OrderConfirmationParams): Promise<EmailResult> {
-  const ordersUrl = `${APP_URL}/account/orders/${orderId}`;
+  const { appUrl } = getRequiredMailEnv();
+  const ordersUrl = `${appUrl}/account/orders/${orderId}`;
 
   return sendEmail({
     to: email,
@@ -151,9 +163,7 @@ export async function sendOrderConfirmationEmail({
     html: `
       <h2>Thank you for your purchase!</h2>
       <p>Your order <strong>#${orderId}</strong> has been successfully completed.</p>
-      <p><strong>Total:</strong> ${(total / 100).toFixed(
-        2
-      )} ${currency}</p>
+      <p><strong>Total:</strong> ${(total / 100).toFixed(2)} ${currency}</p>
       <p>
         <a href="${ordersUrl}">
           View your order & download files
@@ -167,7 +177,8 @@ export async function sendOrderConfirmationEmail({
 export async function sendDownloadLinksEmail({
   email,
 }: DownloadEmailParams): Promise<EmailResult> {
-  const downloadsUrl = `${APP_URL}/account/downloads`;
+  const { appUrl } = getRequiredMailEnv();
+  const downloadsUrl = `${appUrl}/account/downloads`;
 
   return sendEmail({
     to: email,
@@ -194,7 +205,8 @@ export async function sendRefundEmail({
   total,
   currency,
 }: RefundEmailParams): Promise<EmailResult> {
-  const ordersUrl = `${APP_URL}/account/orders/${orderId}`;
+  const { appUrl } = getRequiredMailEnv();
+  const ordersUrl = `${appUrl}/account/orders/${orderId}`;
 
   return sendEmail({
     to: email,
