@@ -25,16 +25,37 @@ if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET missing");
 
 const stripe = new Stripe(stripeSecret);
 
+type Currency = "EUR" | "USD" | "BGN";
+
 type TxClient = Omit<
   typeof prisma,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends" | "$use"
 >;
 
+function compactMetadata(
+  value: Record<string, string | number | boolean | null | undefined>
+): Record<string, string | number | boolean | null> | null {
+  const entries = Object.entries(value).filter(
+    ([, entryValue]) => entryValue !== undefined
+  );
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  return Object.fromEntries(entries) as Record<
+    string,
+    string | number | boolean | null
+  >;
+}
+
 /* =========================
    ORDER LOOKUP
 ========================= */
 
-async function findOrderForCheckoutSession(session: Stripe.Checkout.Session) {
+async function findOrderForCheckoutSession(
+  session: Stripe.Checkout.Session
+) {
   const paymentIntentId =
     typeof session.payment_intent === "string"
       ? session.payment_intent
@@ -96,9 +117,9 @@ async function handleSuccessfulCheckout(params: {
       level: "ERROR",
       stripeEventId: event.id,
       stripeObjectId: session.id,
-      metadata: {
+      metadata: compactMetadata({
         paymentIntentId,
-      },
+      }),
     });
 
     return;
@@ -112,7 +133,9 @@ async function handleSuccessfulCheckout(params: {
       });
 
       if (!currentOrder) {
-        throw new Error(`Order ${order.id} disappeared during webhook processing.`);
+        throw new Error(
+          `Order ${order.id} disappeared during webhook processing.`
+        );
       }
 
       const wasPending = currentOrder.status === "PENDING";
@@ -209,7 +232,7 @@ async function handleSuccessfulCheckout(params: {
       stripeEventId: event.id,
       stripeObjectId: paymentIntentId ?? session.id,
       amountCents: updated.order.total,
-      currency: updated.order.currency,
+      currency: updated.order.currency as Currency,
     });
   }
 
@@ -226,7 +249,7 @@ async function handleSuccessfulCheckout(params: {
       invoiceId: updated.createdInvoiceId,
       orderId: updated.order.id,
       amountCents: updated.order.total,
-      currency: updated.order.currency,
+      currency: updated.order.currency as Currency,
     });
   }
 
@@ -241,12 +264,12 @@ async function handleSuccessfulCheckout(params: {
     await auditLog({
       eventType: "EMAIL_SENT",
       orderId: updated.order.id,
-      metadata: {
+      metadata: compactMetadata({
         type: "ORDER_CONFIRMATION",
         to: updated.order.user.email,
         provider: confirmationResult.provider,
         providerMessageId: confirmationResult.id,
-      },
+      }),
     });
 
     const downloadResult = await sendDownloadLinksEmail({
@@ -256,12 +279,12 @@ async function handleSuccessfulCheckout(params: {
     await auditLog({
       eventType: "EMAIL_SENT",
       orderId: updated.order.id,
-      metadata: {
+      metadata: compactMetadata({
         type: "DOWNLOAD_LINKS",
         to: updated.order.user.email,
         provider: downloadResult.provider,
         providerMessageId: downloadResult.id,
-      },
+      }),
     });
   } catch (err) {
     Sentry.captureException(err);
@@ -270,7 +293,10 @@ async function handleSuccessfulCheckout(params: {
       eventType: "EMAIL_SEND_FAILED",
       level: "ERROR",
       orderId: updated.order.id,
-      metadata: { error: String(err), to: updated.order.user.email },
+      metadata: {
+        error: String(err),
+        to: updated.order.user.email,
+      },
     });
   }
 }
@@ -320,7 +346,7 @@ async function handleChargeRefunded(params: {
       stripeEventId: event.id,
       stripeObjectId: charge.id,
       amountCents: charge.amount_refunded ?? order.total,
-      currency: order.currency,
+      currency: order.currency as Currency,
     });
   }
 
@@ -335,12 +361,12 @@ async function handleChargeRefunded(params: {
     await auditLog({
       eventType: "EMAIL_SENT",
       orderId: order.id,
-      metadata: {
+      metadata: compactMetadata({
         type: "REFUND_EMAIL",
         to: order.user.email,
         provider: refundResult.provider,
         providerMessageId: refundResult.id,
-      },
+      }),
     });
   } catch (err) {
     Sentry.captureException(err);
@@ -349,7 +375,10 @@ async function handleChargeRefunded(params: {
       eventType: "EMAIL_SEND_FAILED",
       level: "ERROR",
       orderId: order.id,
-      metadata: { error: String(err), to: order.user.email },
+      metadata: {
+        error: String(err),
+        to: order.user.email,
+      },
     });
   }
 }
@@ -378,7 +407,11 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret!);
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      webhookSecret!
+    );
   } catch (err) {
     const rateLimited = await rateLimitInvalidStripeAttempt(req);
     if (rateLimited) return rateLimited;
@@ -395,15 +428,15 @@ export async function POST(req: Request) {
     );
   }
 
-  const stripeObject =
+  const stripeObjectId =
     "id" in event.data.object
-      ? (event.data.object as { id: string })
+      ? (event.data.object as { id: string }).id
       : undefined;
 
   await auditLog({
     eventType: "STRIPE_EVENT_RECEIVED",
     stripeEventId: event.id,
-    stripeObjectId: stripeObject?.id,
+    stripeObjectId,
     metadata: {
       type: event.type,
     },
@@ -468,7 +501,7 @@ export async function POST(req: Request) {
       eventType: "STRIPE_WEBHOOK_PROCESSING_FAILED",
       level: "ERROR",
       stripeEventId: event.id,
-      stripeObjectId: stripeObject?.id,
+      stripeObjectId,
       metadata: {
         type: event.type,
         error: String(err),
