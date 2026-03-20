@@ -6,6 +6,8 @@ import {
 } from "@/lib/admin.categories.actions";
 import { revalidatePath } from "next/cache";
 
+export const dynamic = "force-dynamic";
+
 type CategoryWithProductCount = {
   id: string;
   name: string;
@@ -16,14 +18,15 @@ type CategoryWithProductCount = {
 };
 
 export default async function AdminCategoriesPage() {
-  const categories: CategoryWithProductCount[] = await prisma.category.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      _count: {
-        select: { products: true },
+  const categories: CategoryWithProductCount[] =
+    await prisma.category.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        _count: {
+          select: { products: true },
+        },
       },
-    },
-  });
+    });
 
   async function handleCreate(formData: FormData) {
     "use server";
@@ -52,7 +55,6 @@ export default async function AdminCategoriesPage() {
 
   return (
     <div className="space-y-24">
-      {/* CREATE */}
       <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
         <div className="px-16 py-12">
           <form action={handleCreate} className="flex flex-wrap gap-4">
@@ -73,12 +75,11 @@ export default async function AdminCategoriesPage() {
         </div>
       </section>
 
-      {/* LIST */}
       <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
         <div className="px-16 py-16">
           {categories.length > 0 ? (
             <div className="divide-y divide-border">
-              {categories.map((cat) => {
+              {categories.map((cat: CategoryWithProductCount) => {
                 const canDelete = cat._count.products === 0;
 
                 return (
@@ -86,7 +87,6 @@ export default async function AdminCategoriesPage() {
                     key={cat.id}
                     className="flex items-center justify-between py-8"
                   >
-                    {/* EDIT */}
                     <form
                       action={handleUpdate}
                       className="flex items-center gap-6"
@@ -111,7 +111,6 @@ export default async function AdminCategoriesPage() {
                       </button>
                     </form>
 
-                    {/* DELETE */}
                     <form action={handleDelete}>
                       <input type="hidden" name="id" value={cat.id} />
 
