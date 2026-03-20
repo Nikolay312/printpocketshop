@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Input from "@/components/ui/Input";
@@ -62,7 +62,12 @@ function ArrowTextLink({
   className?: string;
 }) {
   return (
-    <motion.div whileHover="hover" initial="rest" animate="rest" className="inline-block">
+    <motion.div
+      whileHover="hover"
+      initial="rest"
+      animate="rest"
+      className="inline-block"
+    >
       <Link
         href={href}
         className={`group inline-flex items-center gap-2 font-medium text-slate-700 transition-colors duration-200 hover:text-slate-950 ${className}`}
@@ -181,7 +186,7 @@ function FeatureCard({
   );
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -378,7 +383,7 @@ export default function LoginPage() {
             className="mx-auto w-full max-w-md"
           >
             <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
-              <div className="mb-6 text-center max-w-xs mx-auto space-y-3">
+              <div className="mx-auto mb-6 max-w-xs space-y-3 text-center">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 lg:hidden">
                   PrintPocketShop
                 </div>
@@ -530,5 +535,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#fafaf8]" />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
