@@ -5,7 +5,15 @@ import { Resend } from "resend";
 import { enforceIpRateLimit } from "@/lib/rateLimit";
 import { auditLog } from "@/lib/audit.server";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not set");
+  }
+
+  return new Resend(apiKey);
+}
 
 type Body = {
   email: string;
@@ -19,6 +27,8 @@ function isValidEmail(email: string) {
 
 export async function POST(req: Request) {
   try {
+    const resend = getResendClient(); // ✅ moved here
+
     const ipLimit = await enforceIpRateLimit({
       headers: req.headers,
       routeKey: "contact:submit",
