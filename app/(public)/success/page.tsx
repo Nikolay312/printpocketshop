@@ -1,15 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
-import { CheckCircle, Download, ArrowRight, Clock3, AlertCircle } from "lucide-react";
+import {
+  CheckCircle,
+  Download,
+  ArrowRight,
+  Clock3,
+  AlertCircle,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecret) {
-  throw new Error("STRIPE_SECRET_KEY is not set");
-}
+function getStripeClient() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecret) {
+    throw new Error("STRIPE_SECRET_KEY is not set");
+  }
 
-const stripe = new Stripe(stripeSecret);
+  return new Stripe(stripeSecret);
+}
 
 type SuccessPageProps = {
   searchParams: Promise<{
@@ -29,6 +37,7 @@ export default async function SuccessPage({
   let session: Stripe.Checkout.Session | null = null;
 
   try {
+    const stripe = getStripeClient();
     session = await stripe.checkout.sessions.retrieve(session_id);
   } catch {
     return (
@@ -44,8 +53,8 @@ export default async function SuccessPage({
             </h1>
 
             <p className="text-lg leading-relaxed text-neutral-600">
-              The payment session could not be found. Please check your account downloads,
-              or contact support if you were charged.
+              The payment session could not be found. Please check your account
+              downloads, or contact support if you were charged.
             </p>
           </div>
 
@@ -115,8 +124,9 @@ export default async function SuccessPage({
             </h1>
 
             <p className="mx-auto max-w-xl pt-4 text-lg leading-relaxed text-neutral-600">
-              We received your checkout and are finalizing your order. This usually takes just a moment.
-              If your downloads do not appear right away, refresh the downloads page shortly.
+              We received your checkout and are finalizing your order. This
+              usually takes just a moment. If your downloads do not appear right
+              away, refresh the downloads page shortly.
             </p>
 
             <div className="pt-2">
@@ -154,7 +164,8 @@ export default async function SuccessPage({
 
           <div className="space-y-2 pt-6 text-sm text-neutral-500">
             <p>
-              If payment was successful, your downloads will appear automatically once processing completes.
+              If payment was successful, your downloads will appear
+              automatically once processing completes.
             </p>
 
             <p className="inline-flex items-center justify-center gap-1">
@@ -185,7 +196,8 @@ export default async function SuccessPage({
           </h1>
 
           <p className="mx-auto max-w-xl pt-4 text-lg leading-relaxed text-neutral-600">
-            Your order has been confirmed and your templates are ready to download.
+            Your order has been confirmed and your templates are ready to
+            download.
           </p>
 
           <div className="pt-2">
