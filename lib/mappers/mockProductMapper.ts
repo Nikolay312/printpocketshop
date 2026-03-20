@@ -3,6 +3,7 @@ import type {
   Currency,
   ProductFormat,
   ProductLicense,
+  ProductFile,
 } from "@/types/product";
 
 /* =========================
@@ -15,7 +16,7 @@ type MockProduct = {
   description: string;
   price: number;
   currency: string;
-  category: string; // slug from mock (e.g. "cv-templates")
+  category: string;
   previewImages: string[];
   format: string;
   license: string;
@@ -48,8 +49,6 @@ function normalizeFormat(value: string): ProductFormat {
   }
 }
 
-
-
 function normalizeLicense(value: string): ProductLicense {
   if (value.toUpperCase() === "COMMERCIAL") return "COMMERCIAL";
   return "PERSONAL";
@@ -63,6 +62,17 @@ function normalizeCategory(slug: string) {
       .replace(/-/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase()),
   };
+}
+
+function normalizeFiles(mock: MockProduct): ProductFile[] {
+  if (!mock.fileUrl) return [];
+
+  return [
+    {
+      id: `${mock.id}-file`,
+      label: null,
+    },
+  ];
 }
 
 /* =========================
@@ -82,7 +92,7 @@ export function mapMockProductToProduct(
     currency: normalizeCurrency(mock.currency),
 
     previewImages: mock.previewImages,
-    fileUrl: mock.fileUrl,
+    files: normalizeFiles(mock),
 
     format: normalizeFormat(mock.format),
     license: normalizeLicense(mock.license),
@@ -94,6 +104,6 @@ export function mapMockProductToProduct(
 
     category: normalizeCategory(mock.category),
 
-    tags: [], // mocks have no tags
+    tags: [],
   };
 }
