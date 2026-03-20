@@ -9,12 +9,14 @@ import { enforceIpRateLimit } from "@/lib/rateLimit";
 import { auditLog } from "@/lib/audit.server";
 import * as Sentry from "@sentry/nextjs";
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecret) {
-  throw new Error("STRIPE_SECRET_KEY is not set");
-}
+function getStripeClient() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecret) {
+    throw new Error("STRIPE_SECRET_KEY is not set");
+  }
 
-const stripe = new Stripe(stripeSecret);
+  return new Stripe(stripeSecret);
+}
 
 type Currency = "EUR" | "USD" | "BGN";
 
@@ -216,19 +218,17 @@ function regroupFlatUnitsToLineItems<C extends Currency>(
     });
   }
 
-  return Array.from(grouped.values()).map(
-    (group: GroupedLineItem) => ({
-      quantity: group.quantity,
-      price_data: {
-        currency: groupCurrencyForStripe(currency),
-        unit_amount: group.unitAmount,
-        product_data: {
-          name: group.name,
-          description: group.description ?? undefined,
-        },
+  return Array.from(grouped.values()).map((group: GroupedLineItem) => ({
+    quantity: group.quantity,
+    price_data: {
+      currency: groupCurrencyForStripe(currency),
+      unit_amount: group.unitAmount,
+      product_data: {
+        name: group.name,
+        description: group.description ?? undefined,
       },
-    })
-  );
+    },
+  }));
 }
 
 function groupCurrencyForStripe<C extends Currency>(
@@ -272,6 +272,8 @@ function createCheckoutFingerprint<
 
 export async function POST(req: Request) {
   try {
+    const stripe = getStripeClient();
+
     const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!rawAppUrl) {
       return NextResponse.json(
