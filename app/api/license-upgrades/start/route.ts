@@ -8,12 +8,14 @@ import { enforceIpRateLimit } from "@/lib/rateLimit";
 import { auditLog } from "@/lib/audit.server";
 import * as Sentry from "@sentry/nextjs";
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecret) {
-  throw new Error("STRIPE_SECRET_KEY is not set");
-}
+function getStripeClient() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecret) {
+    throw new Error("STRIPE_SECRET_KEY is not set");
+  }
 
-const stripe = new Stripe(stripeSecret);
+  return new Stripe(stripeSecret);
+}
 
 type Body = {
   orderItemId: string;
@@ -21,6 +23,8 @@ type Body = {
 
 export async function POST(req: Request) {
   try {
+    const stripe = getStripeClient();
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
       return NextResponse.json(
@@ -109,7 +113,8 @@ export async function POST(req: Request) {
 
     if (
       orderItem.licenseUpgrades.some(
-        (u: (typeof orderItem.licenseUpgrades)[number]) => u.toLicense === "COMMERCIAL"
+        (u: (typeof orderItem.licenseUpgrades)[number]) =>
+          u.toLicense === "COMMERCIAL"
       )
     ) {
       return NextResponse.json(
