@@ -6,34 +6,28 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth.server";
 import { redis } from "@/lib/redis";
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecret) {
-  throw new Error("STRIPE_SECRET_KEY is not set");
-}
+function getStripeClient() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecret) {
+    throw new Error("STRIPE_SECRET_KEY is not set");
+  }
 
-const stripe = new Stripe(stripeSecret);
+  return new Stripe(stripeSecret);
+}
 
 export async function POST() {
   try {
+    const stripe = getStripeClient();
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
-      return NextResponse.redirect(
-        new URL("/account/profile", process.env.NEXT_PUBLIC_APP_URL)
-      );
+      return NextResponse.redirect(new URL("/account/profile", "http://localhost:3000"));
     }
-
-    /* =========================
-       AUTH
-    ========================= */
 
     const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.redirect(new URL("/login", appUrl));
     }
-
-    /* =========================
-       RATE LIMIT (Redis)
-    ========================= */
 
     const rateKey = `portal:${userId}`;
     const attempts = await redis.incr(rateKey);
@@ -48,10 +42,6 @@ export async function POST() {
       );
     }
 
-    /* =========================
-       USER LOOKUP
-    ========================= */
-
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { email: true, stripeCustomerId: true },
@@ -62,10 +52,6 @@ export async function POST() {
     }
 
     let customerId = user.stripeCustomerId;
-
-    /* =========================
-       ENSURE STRIPE CUSTOMER
-    ========================= */
 
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -81,25 +67,19 @@ export async function POST() {
       customerId = customer.id;
     }
 
-    /* =========================
-       CREATE PORTAL SESSION
-    ========================= */
-
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${appUrl}/account/profile`,
     });
 
-    /* =========================
-       REDIRECT TO STRIPE
-    ========================= */
-
     return NextResponse.redirect(session.url!, { status: 303 });
   } catch (err) {
     console.error("Stripe portal error:", err);
 
+    const fallbackBase = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
     return NextResponse.redirect(
-      new URL("/account/profile?error=portal_failed", process.env.NEXT_PUBLIC_APP_URL!)
+      new URL("/account/profile?error=portal_failed", fallbackBase)
     );
   }
 }
