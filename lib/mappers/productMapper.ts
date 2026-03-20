@@ -1,24 +1,49 @@
 import type { Product } from "@/types/product";
-import type {
-  Product as DbProduct,
-  Category,
-  ProductFile,
-  ProductImage,
-} from "@prisma/client";
 
 /* =========================
-   INTERNAL DB SHAPES
+   LOCAL DB SHAPES (SAFE)
 ========================= */
 
 type DbTag = {
   name: string;
 };
 
-type DbProductWithRelations = DbProduct & {
-  category: Category;
+type DbCategory = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+type DbProductFile = {
+  id: string;
+  label?: string | null;
+};
+
+type DbProductImage = {
+  fileKey: string;
+};
+
+type DbProductWithRelations = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+
+  price: number;
+  currency: Product["currency"];
+
+  format: Product["format"];
+  license: Product["license"];
+
+  isFeatured: boolean;
+  sales: number;
+
+  createdAt: Date;
+
+  category: DbCategory;
   tags?: DbTag[];
-  files?: ProductFile[];
-  previewImages?: ProductImage[];
+  files?: DbProductFile[];
+  previewImages?: DbProductImage[];
 };
 
 /* =========================
@@ -34,13 +59,11 @@ export function mapDbProductToProduct(
     slug: p.slug,
     description: p.description,
 
-    // ✅ FIXED: relational preview images
     previewImages:
-      p.previewImages?.map((img) => img.fileKey) ?? [],
+      p.previewImages?.map((img: DbProductImage) => img.fileKey) ?? [],
 
-    // ✅ multi-file support
     files:
-      p.files?.map((f) => ({
+      p.files?.map((f: DbProductFile) => ({
         id: f.id,
         label: f.label ?? null,
       })) ?? [],
@@ -54,7 +77,7 @@ export function mapDbProductToProduct(
       name: p.category.name,
     },
 
-    tags: p.tags?.map((t) => t.name) ?? [],
+    tags: p.tags?.map((t: DbTag) => t.name) ?? [],
 
     format: p.format,
     license: p.license,
