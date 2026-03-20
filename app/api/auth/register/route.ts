@@ -14,13 +14,62 @@ type Body = {
   country?: unknown;
 };
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+function getRequiredRegisterMailEnv() {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const supportEmail = process.env.SUPPORT_EMAIL;
+
+  if (!resendApiKey) {
+    throw new Error("RESEND_API_KEY is not set");
+  }
+
+  if (!appUrl) {
+    throw new Error("NEXT_PUBLIC_APP_URL is not set");
+  }
+
+  if (!supportEmail) {
+    throw new Error("SUPPORT_EMAIL is not set");
+  }
+
+  return { resendApiKey, appUrl, supportEmail };
+}
+
+async function sendVerificationEmail(params: {
+  email: string;
+  name: string | null;
+  token: string;
+}) {
+  const { resendApiKey, appUrl, supportEmail } = getRequiredRegisterMailEnv();
+  const resend = new Resend(resendApiKey);
+  const verifyUrl = `${appUrl}/verify-email?token=${params.token}`;
+
+  await resend.emails.send({
+    from: `PrintPocketShop <${supportEmail}>`,
+    to: params.email,
+    subject: "Verify your email",
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.6;">
+        <h2>Welcome to PrintPocketShop</h2>
+        <p>Hi ${params.name ?? "there"},</p>
+
+        <p>Please verify your email address to activate your account:</p>
+
+        <p>
+          <a href="${verifyUrl}" 
+             style="display:inline-block;padding:12px 20px;background:#000;color:#fff;text-decoration:none;border-radius:6px;">
+            Verify Email
+          </a>
+        </p>
+
+        <p>This link will expire in 15 minutes.</p>
+
+        <p>If you didn’t create this account, you can ignore this email.</p>
+      </div>
+    `,
+  });
+}
 
 export async function POST(req: Request) {
-  /* =========================
-     GLOBAL IP LIMIT
-  ========================= */
-
   const globalLimit = await enforceIpRateLimit({
     headers: req.headers,
     routeKey: "auth:register:global",
@@ -32,19 +81,12 @@ export async function POST(req: Request) {
     return globalLimit.response;
   }
 
-  /* =========================
-     SAFE BODY PARSE
-  ========================= */
-
   let body: Body;
 
   try {
     body = (await req.json()) as Body;
   } catch {
-    return NextResponse.json(
-      { error: "Invalid input" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
   const email =
@@ -53,30 +95,16 @@ export async function POST(req: Request) {
       : undefined;
 
   const password =
-    typeof body.password === "string"
-      ? body.password
-      : undefined;
+    typeof body.password === "string" ? body.password : undefined;
 
-  const name =
-    typeof body.name === "string"
-      ? body.name.trim()
-      : null;
+  const name = typeof body.name === "string" ? body.name.trim() : null;
 
   const country =
-    typeof body.country === "string"
-      ? body.country.trim()
-      : null;
+    typeof body.country === "string" ? body.country.trim() : null;
 
   if (!email || !password || password.length < 8) {
-    return NextResponse.json(
-      { error: "Invalid input" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
-
-  /* =========================
-     TARGETED LIMIT
-  ========================= */
 
   const targetedLimit = await enforceIpRateLimit({
     headers: req.headers,
@@ -88,10 +116,6 @@ export async function POST(req: Request) {
   if (!targetedLimit.allowed) {
     return targetedLimit.response;
   }
-
-  /* =========================
-     CHECK EXISTING USER
-  ========================= */
 
   const existing = await prisma.user.findUnique({
     where: { email },
@@ -105,17 +129,13 @@ export async function POST(req: Request) {
     );
   }
 
-  /* =========================
-     CREATE USER
-  ========================= */
-
   const passwordHash = await hashPassword(password);
 
   const user = await prisma.user.create({
     data: {
       email,
       name,
-      country, // ✅ NOW STORED
+      country,
       password: passwordHash,
       role: "USER",
       emailVerified: false,
@@ -123,17 +143,9 @@ export async function POST(req: Request) {
     select: { id: true, email: true, name: true },
   });
 
-  /* =========================
-     CLEAN OLD TOKENS
-  ========================= */
-
   await prisma.emailVerificationToken.deleteMany({
     where: { userId: user.id },
   });
-
-  /* =========================
-     CREATE TOKEN
-  ========================= */
 
   const token = randomBytes(32).toString("hex");
 
@@ -145,36 +157,11 @@ export async function POST(req: Request) {
     },
   });
 
-  /* =========================
-     SEND EMAIL
-  ========================= */
-
-  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
-
   try {
-    await resend.emails.send({
-      from: `PrintPocketShop <${process.env.SUPPORT_EMAIL}>`,
-      to: user.email,
-      subject: "Verify your email",
-      html: `
-        <div style="font-family: sans-serif; line-height: 1.6;">
-          <h2>Welcome to PrintPocketShop</h2>
-          <p>Hi ${user.name ?? "there"},</p>
-
-          <p>Please verify your email address to activate your account:</p>
-
-          <p>
-            <a href="${verifyUrl}" 
-               style="display:inline-block;padding:12px 20px;background:#000;color:#fff;text-decoration:none;border-radius:6px;">
-              Verify Email
-            </a>
-          </p>
-
-          <p>This link will expire in 15 minutes.</p>
-
-          <p>If you didn’t create this account, you can ignore this email.</p>
-        </div>
-      `,
+    await sendVerificationEmail({
+      email: user.email,
+      name: user.name,
+      token,
     });
   } catch (err) {
     console.error("Email send error:", err);
