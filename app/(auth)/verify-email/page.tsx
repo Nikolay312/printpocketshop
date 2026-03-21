@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
@@ -108,7 +108,7 @@ function AnimatedTextLink({
   );
 }
 
-export default function VerifyEmailPage() {
+function VerifyEmailPageContent() {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -177,7 +177,6 @@ export default function VerifyEmailPage() {
           className="w-full max-w-lg"
         >
           <div className="rounded-[30px] border border-slate-200/80 bg-white/92 p-8 text-center shadow-[0_22px_70px_rgba(15,23,42,0.07),0_8px_24px_rgba(15,23,42,0.04)] sm:p-10">
-
             {status === "loading" && (
               <div>
                 <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900">
@@ -302,5 +301,13 @@ export default function VerifyEmailPage() {
         </motion.div>
       </div>
     </main>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#fafaf8]" />}>
+      <VerifyEmailPageContent />
+    </Suspense>
   );
 }
