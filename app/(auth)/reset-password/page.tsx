@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { motion } from "framer-motion";
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const { showToast } = useToast();
@@ -96,8 +96,7 @@ export default function ResetPasswordPage() {
           className="w-full max-w-md"
         >
           <div className="rounded-[30px] border border-slate-200/80 bg-white/92 p-7 shadow-[0_22px_70px_rgba(15,23,42,0.07),0_8px_24px_rgba(15,23,42,0.04)] sm:p-8">
-            <div className="mb-6 text-center max-w-xs mx-auto space-y-3">
-
+            <div className="mx-auto mb-6 max-w-xs space-y-3 text-center">
               <h1 className="text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-[2rem]">
                 Reset your password
               </h1>
@@ -216,5 +215,13 @@ export default function ResetPasswordPage() {
         </motion.div>
       </div>
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#fafaf8]" />}>
+      <ResetPasswordPageContent />
+    </Suspense>
   );
 }
