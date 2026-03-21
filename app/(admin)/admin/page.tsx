@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminHomePage() {
   const [
     totalProducts,
@@ -19,9 +21,8 @@ export default async function AdminHomePage() {
 
   return (
     <div className="space-y-24">
-      {/* ================= STATS SURFACE ================= */}
       <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-        <div className="px-16 py-16 space-y-16">
+        <div className="space-y-16 px-16 py-16">
           <div className="grid gap-10 md:grid-cols-3">
             <StatCard title="Total Products" value={totalProducts} />
             <StatCard title="Published Products" value={publishedProducts} />
@@ -35,8 +36,6 @@ export default async function AdminHomePage() {
     </div>
   );
 }
-
-/* ================= COMPONENTS ================= */
 
 function StatCard({
   title,
