@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/prisma";
 import { toggleAdminProductFeatured } from "@/lib/admin.products.actions";
 import { revalidatePath } from "next/cache";
