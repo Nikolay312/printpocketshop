@@ -1,6 +1,7 @@
-// app/sitemap.ts
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 const BASE_URL = "https://printpocketshop.com";
 
@@ -14,7 +15,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   return [
-    // Core pages
     {
       url: `${BASE_URL}`,
       lastModified: now,
@@ -27,8 +27,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
-
-    // Authority pages
     {
       url: `${BASE_URL}/about`,
       lastModified: now,
@@ -71,8 +69,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.6,
     },
-
-    // Products
     ...products.map((product: { slug: string }) => ({
       url: `${BASE_URL}/product/${product.slug}`,
       lastModified: now,
