@@ -5,6 +5,8 @@ import { deleteAdminProduct } from "@/lib/admin.products.delete";
 import { revalidatePath } from "next/cache";
 import DeleteProductButton from "@/components/admin/DeleteProductButton";
 
+export const dynamic = "force-dynamic";
+
 type AdminProduct = {
   id: string;
   title: string;
@@ -68,7 +70,7 @@ export default async function AdminProductsPage() {
 
                     <Link
                       href={`/admin/products/${product.id}/edit`}
-                      className="text-sm font-medium text-muted hover:text-foreground transition"
+                      className="text-sm font-medium text-muted transition hover:text-foreground"
                     >
                       Edit
                     </Link>
