@@ -12,7 +12,7 @@ import clsx from "clsx";
    MUST match the one used on the profile page
 ===================================================== */
 function getGradientFromString(input: string) {
-  const colors = [
+  const colors: [string, string][] = [
     ["from-indigo-500", "to-violet-500"],
     ["from-blue-500", "to-cyan-500"],
     ["from-emerald-500", "to-teal-500"],
@@ -45,10 +45,10 @@ export default function Header() {
 
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Avatar state
   const [userInitial, setUserInitial] = useState("U");
   const [gradient, setGradient] = useState<[string, string]>([
     "from-indigo-500",
@@ -56,10 +56,8 @@ export default function Header() {
   ]);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  /* ===============================
-     AUTH + USER (initial + gradient)
-  =============================== */
   const hydrateUserBadge = useCallback(async () => {
     const authed = await isAuthenticated();
     setLoggedIn(authed);
@@ -74,12 +72,11 @@ export default function Header() {
       const res = await fetch("/api/auth/me", {
         method: "GET",
         credentials: "include",
-        headers: { "Accept": "application/json" },
+        headers: { Accept: "application/json" },
         cache: "no-store",
       });
 
       if (!res.ok) {
-        // If /me fails but auth says true, keep safe defaults
         setUserInitial("U");
         setGradient(["from-indigo-500", "to-violet-500"]);
         return;
@@ -87,8 +84,6 @@ export default function Header() {
 
       const data = (await res.json()) as MeResponse;
 
-      // Support multiple common shapes:
-      // { name, email } OR { user: { name, email } }
       let name: string | null = null;
       let email: string | null = null;
 
@@ -102,13 +97,10 @@ export default function Header() {
         }
       }
 
-
-      // Initial should be FIRST LETTER OF NAME, fallback to email
       const initial =
         (name?.trim()?.[0] ?? email?.trim()?.[0] ?? "U").toUpperCase();
       setUserInitial(initial);
 
-      // Gradient MUST be based on email to match profile page
       const basis = (email ?? "unknown@email").toLowerCase();
       const [from, to] = getGradientFromString(basis);
       setGradient([from, to]);
@@ -124,6 +116,8 @@ export default function Header() {
 
   useEffect(() => {
     hydrateUserBadge();
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
   }, [pathname, hydrateUserBadge]);
 
   useEffect(() => {
@@ -132,18 +126,12 @@ export default function Header() {
     return () => window.removeEventListener("focus", onFocus);
   }, [hydrateUserBadge]);
 
-  /* ===============================
-     SCROLL SHRINK
-  =============================== */
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  /* ===============================
-     LOGOUT
-  =============================== */
   const handleLogout = async () => {
     try {
       setLogoutLoading(true);
@@ -155,8 +143,7 @@ export default function Header() {
 
       setLoggedIn(false);
       setDropdownOpen(false);
-
-      // reset badge immediately
+      setMobileMenuOpen(false);
       setUserInitial("U");
       setGradient(["from-indigo-500", "to-violet-500"]);
 
@@ -167,47 +154,63 @@ export default function Header() {
     }
   };
 
-  /* ===============================
-     NAV HELPERS
-  =============================== */
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
-  const navLink = (href: string, label: string) => {
+  const navLink = (
+    href: string,
+    label: string,
+    mobile = false,
+    onNavigate?: () => void
+  ) => {
     const active = isActive(href);
 
     return (
       <Link
         href={href}
+        onClick={onNavigate}
         className={clsx(
-          "relative text-sm font-medium tracking-tight group transition-all duration-300",
-          "active:scale-[0.96]",
+          mobile
+            ? "rounded-xl px-4 py-3 text-sm font-medium"
+            : "relative text-sm font-medium tracking-tight group transition-all duration-300",
+          "transition-all duration-300 active:scale-[0.98]",
           active
             ? "text-[var(--fg)]"
-            : "text-[var(--muted)] hover:text-[var(--fg)]"
+            : "text-[var(--muted)] hover:text-[var(--fg)]",
+          mobile && active && "bg-[var(--border)]/35"
         )}
       >
         {label}
-        <span
-          className={clsx(
-            "absolute left-0 -bottom-2 h-px w-full bg-[var(--fg)] origin-left scale-x-0 transition-transform duration-300",
-            "group-hover:scale-x-100",
-            active && "scale-x-100"
-          )}
-        />
+
+        {!mobile && (
+          <span
+            className={clsx(
+              "absolute left-0 -bottom-2 h-px w-full origin-left scale-x-0 bg-[var(--fg)] transition-transform duration-300",
+              "group-hover:scale-x-100",
+              active && "scale-x-100"
+            )}
+          />
+        )}
       </Link>
     );
   };
 
-  /* ===============================
-     CLOSE DROPDOWN
-  =============================== */
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setDropdownOpen(false);
+      }
+
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(e.target as Node)
+      ) {
+        setMobileMenuOpen(false);
       }
     };
 
@@ -215,121 +218,276 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDropdownOpen(false);
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, []);
+
   return (
     <header
       className={clsx(
         "sticky top-0 z-50 backdrop-blur-xl transition-all duration-300",
-        isScrolled ? "h-[64px] bg-[var(--surface)]/95 shadow-sm" : "h-[76px] bg-[var(--surface)]/90"
+        isScrolled
+          ? "bg-[var(--surface)]/95 shadow-sm"
+          : "bg-[var(--surface)]/90"
       )}
     >
-      <div className="mx-auto grid h-full max-w-7xl grid-cols-3 items-center px-6 lg:px-8">
-        {/* LEFT */}
-        <div>
-          <Link
-            href="/"
-            className="group inline-block text-[21px] md:text-[23px] font-semibold tracking-tight text-[var(--fg)] transition"
-          >
-            <span className="tracking-tight">
-              Print<span className="font-bold">Pocket</span>
-            </span>
-            <span className="ml-1 text-[var(--muted)] font-medium tracking-wide">
-              Shop
-            </span>
-            <span className="block h-[2px] w-0 bg-[var(--fg)] transition-all duration-300 group-hover:w-full" />
-          </Link>
-        </div>
+      <div
+        className={clsx(
+          "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+          isScrolled ? "h-[64px]" : "h-[72px] sm:h-[76px]"
+        )}
+      >
+        <div className="grid h-full grid-cols-[1fr_auto] items-center gap-3 md:grid-cols-3">
+          {/* LEFT */}
+          <div className="min-w-0">
+            <Link
+              href="/"
+              className="group inline-block text-[18px] font-semibold tracking-tight text-[var(--fg)] transition sm:text-[20px] md:text-[23px]"
+            >
+              <span className="tracking-tight">
+                Print<span className="font-bold">Pocket</span>
+              </span>
+              <span className="ml-1 font-medium tracking-wide text-[var(--muted)]">
+                Shop
+              </span>
+              <span className="block h-[2px] w-0 bg-[var(--fg)] transition-all duration-300 group-hover:w-full" />
+            </Link>
+          </div>
 
-        {/* CENTER */}
-        <nav className="hidden md:flex items-center justify-center gap-6">
-          {navLink("/", "Home")}
-          <span>|</span>
-          {navLink("/shop", "Shop")}
-          <span>|</span>
-          {navLink("/contact", "Contact")}
-        </nav>
+          {/* CENTER */}
+          <nav className="hidden items-center justify-center gap-6 md:flex">
+            {navLink("/", "Home")}
+            <span className="text-[var(--muted)]">|</span>
+            {navLink("/shop", "Shop")}
+            <span className="text-[var(--muted)]">|</span>
+            {navLink("/contact", "Contact")}
+          </nav>
 
-        {/* RIGHT */}
-        <div className="flex items-center justify-end">
-          {loggedIn !== null && (
-            <>
-              {loggedIn ? (
-                <div ref={dropdownRef} className="relative">
-                  <button
-                    onClick={() => setDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-3 h-11 px-4 rounded-full hover:bg-[var(--border)]/30 transition active:scale-[0.96]"
-                  >
+          {/* RIGHT */}
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
+            {loggedIn !== null && (
+              <>
+                {loggedIn ? (
+                  <div ref={dropdownRef} className="relative hidden sm:block">
+                    <button
+                      onClick={() => setDropdownOpen((prev) => !prev)}
+                      className="flex h-10 items-center gap-2 rounded-full px-3 transition hover:bg-[var(--border)]/30 active:scale-[0.96] sm:h-11 sm:gap-3 sm:px-4"
+                    >
+                      <div
+                        className={clsx(
+                          "flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white shadow-md sm:h-9 sm:w-9",
+                          gradient[0],
+                          gradient[1]
+                        )}
+                        aria-label="Account avatar"
+                        title="Account"
+                      >
+                        {userInitial}
+                      </div>
+
+                      <span className="hidden text-sm font-medium text-[var(--fg)] sm:inline">
+                        Account
+                      </span>
+
+                      <svg
+                        className={clsx(
+                          "h-4 w-4 transition-transform duration-200",
+                          dropdownOpen && "rotate-180"
+                        )}
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path d="M5.23 7.21 10 11.168l4.77-3.958" />
+                      </svg>
+                    </button>
+
                     <div
                       className={clsx(
-                        "h-9 w-9 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-sm font-semibold shadow-md"
-                      ,
-                        gradient[0],
-                        gradient[1]
+                        "absolute right-0 top-full mt-2 origin-top-right rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl transition-all duration-200",
+                        "w-56",
+                        dropdownOpen
+                          ? "pointer-events-auto scale-100 opacity-100"
+                          : "pointer-events-none scale-95 opacity-0"
                       )}
-                      aria-label="Account avatar"
-                      title="Account"
                     >
-                      {userInitial}
+                      <div className="flex flex-col gap-1 p-3 text-sm">
+                        <Link
+                          href="/account/profile"
+                          className="rounded-md px-3 py-2 transition hover:bg-[var(--border)]/30"
+                        >
+                          Profile
+                        </Link>
+                        <Link
+                          href="/account/orders"
+                          className="rounded-md px-3 py-2 transition hover:bg-[var(--border)]/30"
+                        >
+                          Orders
+                        </Link>
+                        <Link
+                          href="/account/settings"
+                          className="rounded-md px-3 py-2 transition hover:bg-[var(--border)]/30"
+                        >
+                          Settings
+                        </Link>
+
+                        <div className="my-2 h-px bg-[var(--border)]" />
+
+                        <button
+                          onClick={handleLogout}
+                          disabled={logoutLoading}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {logoutLoading && (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          )}
+                          Logout
+                        </button>
+                      </div>
                     </div>
-
-                    <span className="text-sm font-medium text-[var(--fg)]">
-                      Account
-                    </span>
-
-                    <svg
-                      className={clsx(
-                        "h-4 w-4 transition-transform duration-200",
-                        dropdownOpen && "rotate-180"
-                      )}
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M5.23 7.21 10 11.168l4.77-3.958" />
-                    </svg>
-                  </button>
-
-                  {/* Dropdown */}
-                  <div
-                    className={clsx(
-                      "absolute right-0 top-full mt-2 w-56 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl transition-all duration-200 origin-top-right",
-                      dropdownOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
-                    )}
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="hidden h-10 items-center justify-center rounded-full border border-[var(--border)] px-4 text-sm font-semibold text-[var(--fg)] transition hover:bg-[var(--border)]/40 active:scale-[0.96] sm:flex sm:h-11 sm:px-6"
                   >
-                    <div className="flex flex-col p-3 text-sm gap-1">
-                      <Link href="/account/profile" className="px-3 py-2 rounded-md hover:bg-[var(--border)]/30 transition">
+                    Sign in
+                  </Link>
+                )}
+              </>
+            )}
+
+            <div ref={mobileMenuRef} className="relative md:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] transition hover:bg-[var(--border)]/30 active:scale-[0.96]"
+                aria-label="Toggle menu"
+                aria-expanded={mobileMenuOpen}
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {mobileMenuOpen ? (
+                    <>
+                      <path d="M6 6l12 12" />
+                      <path d="M18 6L6 18" />
+                    </>
+                  ) : (
+                    <>
+                      <path d="M4 7h16" />
+                      <path d="M4 12h16" />
+                      <path d="M4 17h16" />
+                    </>
+                  )}
+                </svg>
+              </button>
+
+              <div
+                className={clsx(
+                  "absolute right-0 top-full mt-3 w-[min(92vw,320px)] origin-top-right rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-2xl transition-all duration-200",
+                  mobileMenuOpen
+                    ? "pointer-events-auto scale-100 opacity-100"
+                    : "pointer-events-none scale-95 opacity-0"
+                )}
+              >
+                <div className="flex flex-col gap-1">
+                  {navLink("/", "Home", true, () => setMobileMenuOpen(false))}
+                  {navLink("/shop", "Shop", true, () => setMobileMenuOpen(false))}
+                  {navLink(
+                    "/contact",
+                    "Contact",
+                    true,
+                    () => setMobileMenuOpen(false)
+                  )}
+
+                  <div className="my-2 h-px bg-[var(--border)]" />
+
+                  {loggedIn ? (
+                    <>
+                      <div className="flex items-center gap-3 rounded-xl px-4 py-3">
+                        <div
+                          className={clsx(
+                            "flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white shadow-md",
+                            gradient[0],
+                            gradient[1]
+                          )}
+                        >
+                          {userInitial}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-[var(--fg)]">
+                            Account
+                          </p>
+                          <p className="text-xs text-[var(--muted)]">
+                            Signed in
+                          </p>
+                        </div>
+                      </div>
+
+                      <Link
+                        href="/account/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--muted)] transition hover:bg-[var(--border)]/30 hover:text-[var(--fg)]"
+                      >
                         Profile
                       </Link>
-                      <Link href="/account/orders" className="px-3 py-2 rounded-md hover:bg-[var(--border)]/30 transition">
+                      <Link
+                        href="/account/orders"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--muted)] transition hover:bg-[var(--border)]/30 hover:text-[var(--fg)]"
+                      >
                         Orders
                       </Link>
-                      <Link href="/account/settings" className="px-3 py-2 rounded-md hover:bg-[var(--border)]/30 transition">
+                      <Link
+                        href="/account/settings"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--muted)] transition hover:bg-[var(--border)]/30 hover:text-[var(--fg)]"
+                      >
                         Settings
                       </Link>
 
-                      <div className="my-2 h-px bg-[var(--border)]" />
-
-                      <button
-                        onClick={handleLogout}
-                        disabled={logoutLoading}
-                        className="flex items-center justify-center gap-2 w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition active:scale-[0.96]"
-                      >
-                        {logoutLoading && (
-                          <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        )}
-                        Logout
-                      </button>
-                    </div>
-                  </div>
+                      <div className="pt-2">
+                        <button
+                          onClick={handleLogout}
+                          disabled={logoutLoading}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {logoutLoading && (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          )}
+                          Logout
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center rounded-xl border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--fg)] transition hover:bg-[var(--border)]/30 active:scale-[0.98]"
+                    >
+                      Sign in
+                    </Link>
+                  )}
                 </div>
-              ) : (
-                <Link
-                  href="/login"
-                  className="flex items-center justify-center h-11 px-6 rounded-full border border-[var(--border)] text-sm font-semibold text-[var(--fg)] hover:bg-[var(--border)]/40 transition active:scale-[0.96]"
-                >
-                  Sign in
-                </Link>
-              )}
-            </>
-          )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

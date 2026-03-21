@@ -39,28 +39,25 @@ export default function HowItWorks() {
 
   return (
     <section ref={ref} className="relative">
-
       {/* Subtle background glow */}
-      <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-[400px] w-[700px] rounded-full bg-accent/5 blur-[120px] -z-10" />
+      <div className="absolute -top-16 left-1/2 -z-10 h-[220px] w-[90vw] max-w-[520px] -translate-x-1/2 rounded-full bg-accent/5 blur-[80px] sm:-top-20 sm:h-[300px] sm:max-w-[620px] sm:blur-[100px] lg:-top-24 lg:h-[400px] lg:w-[700px] lg:blur-[120px]" />
 
       {/* Header */}
-      <div className="mx-auto max-w-3xl text-center mb-20">
-        <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight text-[var(--fg)]">
+      <div className="mx-auto mb-10 max-w-3xl text-center sm:mb-14 lg:mb-20">
+        <h2 className="text-3xl font-semibold tracking-tight text-[var(--fg)] sm:text-4xl lg:text-5xl">
           How it works
         </h2>
-        <p className="mt-4 text-lg text-[var(--muted)]">
+        <p className="mt-3 text-sm leading-6 text-[var(--muted)] sm:mt-4 sm:text-base lg:text-lg">
           A streamlined experience from selection to instant delivery.
         </p>
       </div>
 
       {/* Steps Wrapper */}
       <div className="relative mx-auto max-w-6xl">
-
         {/* Connecting line */}
-        <div className="hidden lg:block absolute top-16 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--border)] to-transparent" />
+        <div className="absolute left-0 right-0 top-16 hidden h-px bg-gradient-to-r from-transparent via-[var(--border)] to-transparent lg:block" />
 
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-10">
           {steps.map((item, idx) => {
             const Icon = item.icon;
 
@@ -70,63 +67,54 @@ export default function HowItWorks() {
                 className={`
                   group relative overflow-hidden rounded-3xl p-[1px]
                   transition-all duration-700 ease-out
-                  ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
+                  ${visible ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}
                 `}
                 style={{ transitionDelay: `${idx * 150}ms` }}
               >
                 {/* Animated gradient border */}
-                <div className="
-                  absolute inset-0 rounded-3xl
-                  bg-gradient-to-br from-accent/40 via-transparent to-accent/40
-                  opacity-0 group-hover:opacity-100
-                  transition-opacity duration-500
-                " />
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-accent/40 via-transparent to-accent/40 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                 {/* Card */}
-                <div className="
-                  relative rounded-3xl bg-white/80 backdrop-blur-md
-                  border border-white/40
-                  p-10
-                  shadow-[0_10px_40px_rgba(0,0,0,0.06)]
-                  transition-all duration-500
-                  group-hover:-translate-y-2
-                  group-hover:shadow-[0_30px_90px_rgba(0,0,0,0.12)]
-                ">
-
+                <div
+                  className="
+                    relative rounded-3xl border border-white/40 bg-white/80
+                    p-6 shadow-[0_10px_40px_rgba(0,0,0,0.06)] backdrop-blur-md
+                    transition-all duration-500
+                    group-hover:-translate-y-1
+                    group-hover:shadow-[0_30px_90px_rgba(0,0,0,0.12)]
+                    sm:p-8 lg:p-10
+                  "
+                >
                   {/* Radial hover glow */}
-                  <div className="
-                    pointer-events-none absolute -inset-20 opacity-0
-                    bg-radial-gradient from-accent/10 via-transparent to-transparent
-                    group-hover:opacity-100
-                    transition-opacity duration-500
-                  " />
+                  <div className="pointer-events-none absolute -inset-20 opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-radial-gradient from-accent/10 via-transparent to-transparent" />
 
                   {/* Icon */}
-                  <div className="
-                    inline-flex h-14 w-14 items-center justify-center
-                    rounded-2xl bg-accent/10 text-accent
-                    transition-transform duration-500
-                    group-hover:scale-110
-                  ">
+                  <div
+                    className="
+                      inline-flex h-12 w-12 items-center justify-center
+                      rounded-2xl bg-accent/10 text-accent
+                      transition-transform duration-500
+                      group-hover:scale-110
+                      sm:h-14 sm:w-14
+                    "
+                  >
                     <Icon size={22} />
                   </div>
 
                   {/* Content */}
-                  <div className="mt-8 space-y-3">
-                    <h3 className="text-xl font-semibold tracking-tight text-[var(--fg)]">
+                  <div className="mt-6 space-y-3 sm:mt-8">
+                    <h3 className="text-lg font-semibold tracking-tight text-[var(--fg)] sm:text-xl">
                       {item.title}
                     </h3>
 
-                    <p className="text-base leading-relaxed text-[var(--muted)]">
+                    <p className="text-sm leading-6 text-[var(--muted)] sm:text-base sm:leading-relaxed">
                       {item.text}
                     </p>
                   </div>
-
                 </div>
               </div>
             );
           })}
-
         </div>
       </div>
     </section>
