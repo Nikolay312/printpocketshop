@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Input from "@/components/ui/Input";
@@ -186,7 +186,7 @@ function FeatureCard({
   );
 }
 
-export default function SignupPage() {
+function SignupPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -417,7 +417,7 @@ export default function SignupPage() {
             className="mx-auto w-full max-w-md"
           >
             <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
-              <div className="mb-6 text-center max-w-xs mx-auto space-y-3">
+              <div className="mx-auto mb-6 max-w-xs space-y-3 text-center">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 lg:hidden">
                   PrintPocketShop
                 </div>
@@ -558,5 +558,13 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#fafaf8]" />}>
+      <SignupPageContent />
+    </Suspense>
   );
 }
