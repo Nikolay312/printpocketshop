@@ -16,6 +16,13 @@ const STORAGE_KEY = "pps-cart-button-position";
  */
 const HEADER_SAFE_BOTTOM = 92;
 
+/**
+ * Motion tuning for smoother, more premium drag / snap feel.
+ */
+const FOLLOW_LERP = 0.22;
+const SNAP_LERP = 0.16;
+const SIDE_SWITCH_DEADZONE = 36;
+
 type Side = "left" | "right";
 
 type Position = {
@@ -51,7 +58,7 @@ function clampY(y: number, bounds: VerticalBounds): number {
 
 function getXForSide(side: Side): number {
   if (typeof window === "undefined") {
-    return side === "left" ? MARGIN : MARGIN;
+    return MARGIN;
   }
 
   return side === "left"
@@ -106,6 +113,10 @@ export default function CartToggleButton() {
   const [position, setPosition] = useState<Position>(() => getInitialPosition());
   const [isDragging, setIsDragging] = useState(false);
 
+  const positionRef = useRef<Position>(position);
+  const animationFrameRef = useRef<number | null>(null);
+  const targetRef = useRef<Position>(position);
+
   const dragRef = useRef({
     pointerId: null as number | null,
     startX: 0,
@@ -113,6 +124,7 @@ export default function CartToggleButton() {
     originSide: "right" as Side,
     originY: 0,
     moved: false,
+    activeSide: "right" as Side,
   });
 
   const itemCount = useMemo(() => {
@@ -121,27 +133,81 @@ export default function CartToggleButton() {
   }, [cartItems]);
 
   useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
   }, [position]);
 
   useEffect(() => {
     const handleResize = () => {
-      setPosition((prev) => normalizePosition(prev));
+      const next = normalizePosition(positionRef.current);
+      targetRef.current = next;
+      positionRef.current = next;
+      setPosition(next);
     };
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  const stopAnimation = () => {
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  };
+
+  const animateToTarget = (lerp: number) => {
+    stopAnimation();
+
+    const tick = () => {
+      const current = positionRef.current;
+      const target = normalizePosition(targetRef.current);
+
+      const nextY = current.y + (target.y - current.y) * lerp;
+      const closeEnough = Math.abs(target.y - nextY) < 0.35;
+
+      const next: Position = {
+        side: target.side,
+        y: closeEnough ? target.y : nextY,
+      };
+
+      positionRef.current = next;
+      setPosition(next);
+
+      if (!closeEnough || next.side !== target.side) {
+        animationFrameRef.current = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      animationFrameRef.current = null;
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(tick);
+  };
+
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    stopAnimation();
+
     dragRef.current = {
       pointerId: e.pointerId,
       startX: e.clientX,
       startY: e.clientY,
-      originSide: position.side,
-      originY: position.y,
+      originSide: positionRef.current.side,
+      originY: positionRef.current.y,
       moved: false,
+      activeSide: positionRef.current.side,
     };
 
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -164,26 +230,40 @@ export default function CartToggleButton() {
     if (!dragRef.current.moved) return;
 
     const bounds = getVerticalBounds();
-    const nextY = clampY(dragRef.current.originY + dy, bounds);
+    const rawTargetY = dragRef.current.originY + dy;
+    const nextY = clampY(rawTargetY, bounds);
 
-    /**
-     * Side switching:
-     * The button only lives on the left or right frame edge.
-     * Dragging across the screen midpoint switches sides.
-     */
-    const nextSide: Side =
-      e.clientX <= window.innerWidth / 2 ? "left" : "right";
+    const midpoint = window.innerWidth / 2;
+    const leftThreshold = midpoint - SIDE_SWITCH_DEADZONE;
+    const rightThreshold = midpoint + SIDE_SWITCH_DEADZONE;
 
-    setPosition((prev) => ({
+    let nextSide = dragRef.current.activeSide;
+
+    if (e.clientX <= leftThreshold) {
+      nextSide = "left";
+    } else if (e.clientX >= rightThreshold) {
+      nextSide = "right";
+    }
+
+    dragRef.current.activeSide = nextSide;
+
+    targetRef.current = {
       side: nextSide,
-      y: prev.y + (nextY - prev.y) * 0.35, // smoothing interpolation
-    }));
+      y: nextY,
+    };
+
+    animateToTarget(FOLLOW_LERP);
   };
 
   const endDrag = (pointerId: number) => {
     if (dragRef.current.pointerId !== pointerId) return;
 
     dragRef.current.pointerId = null;
+
+    if (dragRef.current.moved) {
+      targetRef.current = normalizePosition(targetRef.current);
+      animateToTarget(SNAP_LERP);
+    }
 
     window.setTimeout(() => {
       setIsDragging(false);
@@ -218,14 +298,14 @@ export default function CartToggleButton() {
         }}
         className={clsx(
           "fixed z-40 flex items-center justify-center",
-          "h-14 w-14 rounded-full",
+          "h-12 w-12 rounded-full",
           "border border-black/5 bg-white/95 backdrop-blur-md",
-          "shadow-[0_12px_30px_rgba(15,23,42,0.14),0_2px_8px_rgba(15,23,42,0.08)]",
-          "touch-none select-none",
-          "transition-[transform,box-shadow,background-color,top,left] duration-300 ease-out",
+          "shadow-[0_10px_24px_rgba(15,23,42,0.14),0_2px_8px_rgba(15,23,42,0.08)]",
+          "touch-none select-none will-change-transform",
+          "transition-[transform,box-shadow,background-color] duration-200 ease-out",
           isDragging
-            ? "scale-[1.05] shadow-[0_18px_42px_rgba(15,23,42,0.22),0_4px_14px_rgba(15,23,42,0.12)]"
-            : "hover:scale-[1.03] hover:shadow-[0_16px_38px_rgba(15,23,42,0.18),0_4px_12px_rgba(15,23,42,0.1)] active:scale-[0.96]",
+            ? "scale-[1.04] shadow-[0_16px_36px_rgba(15,23,42,0.2),0_4px_14px_rgba(15,23,42,0.12)]"
+            : "hover:scale-[1.03] hover:shadow-[0_14px_30px_rgba(15,23,42,0.17),0_4px_12px_rgba(15,23,42,0.1)] active:scale-[0.96]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-2"
         )}
       >
@@ -240,7 +320,7 @@ export default function CartToggleButton() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-[22px] w-[22px] text-slate-900"
+            className="h-5 w-5 text-slate-900"
             aria-hidden="true"
           >
             <circle cx="9" cy="21" r="1" />
@@ -252,8 +332,8 @@ export default function CartToggleButton() {
         {itemCount > 0 && (
           <span
             className={clsx(
-              "absolute -right-1 -top-1 flex min-w-[22px] items-center justify-center rounded-full px-1.5",
-              "h-[22px] text-[11px] font-semibold leading-none text-white",
+              "absolute -right-1 -top-1 flex min-w-[20px] items-center justify-center rounded-full px-1.5",
+              "h-5 text-[10px] font-semibold leading-none text-white",
               "bg-black shadow-[0_4px_10px_rgba(0,0,0,0.22)]"
             )}
           >
