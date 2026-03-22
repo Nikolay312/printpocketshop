@@ -57,41 +57,22 @@ function clampToBounds(pos: Position, bounds: FrameBounds): Position {
 }
 
 /**
- * Project any dragged point to the nearest edge of the allowed frame.
- * This keeps the cart moving only around the website perimeter,
- * not freely through the middle of the page.
+ * Keep the button only on the left or right website frame.
+ * Vertical movement is free within bounds, while horizontal movement
+ * snaps to the left or right side depending on which half of the screen
+ * the pointer is closer to.
  */
 function projectToFrame(pos: Position): Position {
   if (typeof window === "undefined") return pos;
 
   const bounds = getFrameBounds();
   const clamped = clampToBounds(pos, bounds);
+  const viewportMidX = window.innerWidth / 2;
 
-  const distanceToLeft = Math.abs(clamped.x - bounds.minX);
-  const distanceToRight = Math.abs(clamped.x - bounds.maxX);
-  const distanceToTop = Math.abs(clamped.y - bounds.minY);
-  const distanceToBottom = Math.abs(clamped.y - bounds.maxY);
-
-  const minDistance = Math.min(
-    distanceToLeft,
-    distanceToRight,
-    distanceToTop,
-    distanceToBottom
-  );
-
-  if (minDistance === distanceToLeft) {
-    return { x: bounds.minX, y: clamped.y };
-  }
-
-  if (minDistance === distanceToRight) {
-    return { x: bounds.maxX, y: clamped.y };
-  }
-
-  if (minDistance === distanceToTop) {
-    return { x: clamped.x, y: bounds.minY };
-  }
-
-  return { x: clamped.x, y: bounds.maxY };
+  return {
+    x: clamped.x <= viewportMidX ? bounds.minX : bounds.maxX,
+    y: clamped.y,
+  };
 }
 
 function getDefaultPosition(): Position {
@@ -105,7 +86,7 @@ function getDefaultPosition(): Position {
   const bounds = getFrameBounds();
 
   return {
-    x: bounds.maxX,
+    x: bounds.minX,
     y: bounds.minY,
   };
 }
@@ -113,30 +94,15 @@ function getDefaultPosition(): Position {
 function getInitialPosition(): Position {
   if (typeof window === "undefined") return getDefaultPosition();
 
-  const bounds = getFrameBounds();
-
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as Position;
-
-      const projected = projectToFrame(parsed);
-
-      if (projected.x < bounds.maxX * 0.5) {
-        return {
-          x: bounds.maxX,
-          y: projected.y,
-        };
-      }
-
-      return projected;
+      return projectToFrame(parsed);
     }
   } catch {}
 
-  return {
-    x: bounds.maxX,
-    y: bounds.minY,
-  };
+  return getDefaultPosition();
 }
 
 export default function CartToggleButton() {
