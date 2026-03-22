@@ -8,7 +8,7 @@ import clsx from "clsx";
 const BUTTON_SIZE = 48;
 const MARGIN = 12;
 const DRAG_THRESHOLD = 6;
-const STORAGE_KEY = "pps-cart-button-position";
+const STORAGE_KEY = "pps-cart-button-position-v2";
 
 /**
  * Keep this slightly larger than the actual visible header height
@@ -86,7 +86,7 @@ function getDefaultPosition(): Position {
   const bounds = getFrameBounds();
 
   return {
-    x: bounds.minX,
+    x: bounds.maxX,
     y: bounds.minY,
   };
 }
