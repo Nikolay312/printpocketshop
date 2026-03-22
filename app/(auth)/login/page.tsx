@@ -199,7 +199,6 @@ function LoginPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -223,7 +222,7 @@ function LoginPageContent() {
     try {
       setLoading(true);
 
-      await loginUser(email, password, rememberMe);
+      await loginUser(email, password, false);
 
       const guestCart = getGuestCart();
 
@@ -382,13 +381,29 @@ function LoginPageContent() {
             }}
             className="mx-auto w-full max-w-md"
           >
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] sm:p-6 lg:p-7">
-              <div className="mx-auto mb-5 max-w-xs space-y-2 text-center sm:mb-6 sm:space-y-3">
-                <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-950 sm:text-3xl">
+            <div className="overflow-hidden rounded-[28px] border border-slate-200/90 bg-white/95 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur sm:rounded-2xl sm:p-6 lg:p-7">
+              <div className="mx-auto mb-5 max-w-sm rounded-[24px] bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.9))] px-4 py-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:mb-6 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none">
+                <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-[0_10px_25px_rgba(15,23,42,0.18)] sm:hidden">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+                    <path d="M5 20a7 7 0 0 1 14 0" />
+                  </svg>
+                </div>
+
+                <h2 className="text-[1.95rem] font-semibold tracking-[-0.04em] text-slate-950 sm:text-3xl">
                   Welcome Back
                 </h2>
 
-                <p className="text-sm leading-6 text-slate-500">
+                <p className="mt-2 text-sm leading-6 text-slate-500">
                   Sign in to your account
                 </p>
               </div>
@@ -446,23 +461,12 @@ function LoginPageContent() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 pt-1">
-                  <label className="flex w-fit items-center gap-3 text-sm text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      disabled={loading}
-                      className="h-4 w-4 shrink-0 rounded border-slate-300 text-black focus:ring-2 focus:ring-slate-300"
-                    />
-                    <span className="leading-5">Remember me</span>
-                  </label>
-
+                <div className="pt-1">
                   <motion.div
                     whileHover="hover"
                     initial="rest"
                     animate="rest"
-                    className="inline-flex sm:self-end"
+                    className="inline-flex"
                   >
                     <Link
                       href="/forgot-password"
