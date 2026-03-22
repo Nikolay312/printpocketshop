@@ -107,14 +107,14 @@ function FeatureCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
       whileHover="hover"
-      className="group relative w-[190px] shrink-0"
+      className="group relative min-w-0"
     >
       <motion.div
         variants={{
-          hover: { y: -6, scale: 1.01 },
+          hover: { y: -4, scale: 1.01 },
         }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="relative min-h-[210px] overflow-hidden rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+        className="relative h-full overflow-hidden rounded-[22px] border border-slate-200/80 bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
       >
         <motion.div
           variants={{
@@ -144,7 +144,7 @@ function FeatureCard({
                 hover: { y: -2, scale: 1.03 },
               }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="flex h-10 w-10 items-center justify-center rounded-[18px] border border-slate-200 bg-slate-50 text-slate-950 shadow-[0_6px_14px_rgba(15,23,42,0.035)]"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border border-slate-200 bg-slate-50 text-slate-950 shadow-[0_6px_14px_rgba(15,23,42,0.035)]"
             >
               {icon}
             </motion.div>
@@ -162,10 +162,10 @@ function FeatureCard({
           </div>
 
           <div className="mt-4">
-            <h3 className="max-w-[10rem] text-[1.12rem] font-semibold leading-[1.18] tracking-[-0.035em] text-slate-950">
+            <h3 className="text-[1.05rem] font-semibold leading-[1.2] tracking-[-0.03em] text-slate-950 sm:text-[1.12rem]">
               {title}
             </h3>
-            <p className="mt-2 max-w-[11rem] text-[14px] leading-6 text-slate-600">
+            <p className="mt-2 text-[14px] leading-6 text-slate-600">
               {description}
             </p>
           </div>
@@ -254,7 +254,7 @@ function LoginPageContent() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#fafaf8] px-6 py-8 sm:px-8 lg:px-12">
+    <main className="relative min-h-screen overflow-hidden bg-[#fafaf8] px-4 py-4 sm:px-6 sm:py-6 lg:px-12 lg:py-8">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.99),rgba(248,250,252,0.96)_44%,rgba(243,245,247,0.94)_100%)]" />
         <div className="absolute left-[-8rem] top-[-6rem] h-[22rem] w-[22rem] rounded-full bg-white blur-3xl" />
@@ -264,25 +264,25 @@ function LoginPageContent() {
         <div className="absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(15,23,42,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.03)_1px,transparent_1px)] [background-size:92px_92px]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center">
-        <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+      <div className="relative mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl items-center sm:min-h-[calc(100vh-3rem)]">
+        <div className="grid w-full gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-10">
           <motion.div
             initial={{ opacity: 0, x: -24 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="hidden lg:block"
+            className="order-2 lg:order-1"
           >
-            <div className="max-w-2xl">
-              <div className="mb-6 inline-flex items-center rounded-full border border-slate-200/80 bg-white/88 px-4 py-2 text-sm font-medium text-slate-600 shadow-[0_6px_18px_rgba(15,23,42,0.03)]">
+            <div className="mx-auto max-w-2xl lg:mx-0">
+              <div className="mb-4 inline-flex items-center rounded-full border border-slate-200/80 bg-white/88 px-4 py-2 text-xs font-medium text-slate-600 shadow-[0_6px_18px_rgba(15,23,42,0.03)] sm:mb-6 sm:text-sm">
                 PrintPocketShop
               </div>
 
-              <h1 className="max-w-3xl text-5xl font-semibold tracking-[-0.05em] text-slate-950 xl:text-6xl">
+              <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.05em] text-slate-950 sm:text-4xl lg:text-5xl xl:text-6xl">
                 Access your products and continue where you left off
               </h1>
 
-              <div className="mt-5 max-w-xl space-y-3">
-                <p className="text-lg leading-8 text-slate-600">
+              <div className="mt-4 max-w-xl space-y-3 sm:mt-5">
+                <p className="text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
                   Sign in to access your purchased products, continue checkout,
                   and manage everything from one clean account space.
                 </p>
@@ -307,7 +307,7 @@ function LoginPageContent() {
                 </motion.div>
               </div>
 
-              <div className="mt-12 flex max-w-[620px] flex-wrap gap-4">
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:mt-8 sm:grid-cols-2 lg:mt-12 lg:grid-cols-3 lg:gap-4">
                 <FeatureCard
                   eyebrow="Purchases"
                   icon={
@@ -380,10 +380,10 @@ function LoginPageContent() {
               delay: 0.05,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className="mx-auto w-full max-w-md"
+            className="order-1 mx-auto w-full max-w-md lg:order-2"
           >
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
-              <div className="mx-auto mb-6 max-w-xs space-y-3 text-center">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] sm:p-6 lg:p-7">
+              <div className="mx-auto mb-5 max-w-xs space-y-2 text-center sm:mb-6 sm:space-y-3">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 lg:hidden">
                   PrintPocketShop
                 </div>
@@ -392,12 +392,12 @@ function LoginPageContent() {
                   Welcome Back
                 </h2>
 
-                <p className="text-sm text-slate-500">
+                <p className="text-sm leading-6 text-slate-500">
                   Sign in to your account
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -6 }}
@@ -450,8 +450,8 @@ function LoginPageContent() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-4 whitespace-nowrap">
-                  <label className="flex items-center gap-2 whitespace-nowrap text-sm text-slate-600">
+                <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <label className="flex items-center gap-2 text-sm text-slate-600">
                     <input
                       type="checkbox"
                       checked={rememberMe}
@@ -490,6 +490,7 @@ function LoginPageContent() {
                 <motion.div
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
+                  className="pt-1"
                 >
                   <Button
                     type="submit"
@@ -501,7 +502,7 @@ function LoginPageContent() {
                 </motion.div>
               </form>
 
-              <div className="mt-6 text-center text-sm text-slate-600">
+              <div className="mt-5 text-center text-sm leading-6 text-slate-600 sm:mt-6">
                 Don’t have an account?{" "}
                 <ArrowTextLink
                   href={
@@ -515,7 +516,7 @@ function LoginPageContent() {
                 </ArrowTextLink>
               </div>
 
-              <div className="mt-6 border-t border-slate-200 pt-5 text-center text-xs leading-6 text-slate-500">
+              <div className="mt-5 border-t border-slate-200 pt-4 text-center text-xs leading-6 text-slate-500 sm:mt-6 sm:pt-5">
                 By continuing, you agree to our{" "}
                 <AnimatedTextLink href="/policies/terms">
                   Terms
