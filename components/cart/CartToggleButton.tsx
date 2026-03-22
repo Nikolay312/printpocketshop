@@ -8,12 +8,8 @@ import clsx from "clsx";
 const BUTTON_SIZE = 48;
 const MARGIN = 12;
 const DRAG_THRESHOLD = 6;
-const STORAGE_KEY = "pps-cart-button-position-v2";
+const STORAGE_KEY = "pps-cart-button-position-v3"; // 🔥 new key to reset position
 
-/**
- * Keep this slightly larger than the actual visible header height
- * so the button never enters header territory.
- */
 const HEADER_SAFE_BOTTOM = 92;
 
 type Position = {
@@ -56,12 +52,6 @@ function clampToBounds(pos: Position, bounds: FrameBounds): Position {
   };
 }
 
-/**
- * Keep the button only on the left or right website frame.
- * Vertical movement is free within bounds, while horizontal movement
- * snaps to the left or right side depending on which half of the screen
- * the pointer is closer to.
- */
 function projectToFrame(pos: Position): Position {
   if (typeof window === "undefined") return pos;
 
@@ -75,6 +65,7 @@ function projectToFrame(pos: Position): Position {
   };
 }
 
+/** ✅ DEFAULT = LEFT SIDE */
 function getDefaultPosition(): Position {
   if (typeof window === "undefined") {
     return {
@@ -86,7 +77,7 @@ function getDefaultPosition(): Position {
   const bounds = getFrameBounds();
 
   return {
-    x: bounds.maxX,
+    x: bounds.minX, // 👈 LEFT
     y: bounds.minY,
   };
 }
