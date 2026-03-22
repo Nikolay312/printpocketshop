@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import CartToggleButton from "@/components/cart/CartToggleButton";
 import { isAuthenticated } from "@/lib/auth";
 import clsx from "clsx";
 
@@ -174,7 +173,7 @@ export default function Header() {
         className={clsx(
           mobile
             ? "rounded-xl px-4 py-3 text-sm font-medium"
-            : "relative text-sm font-medium tracking-tight group transition-all duration-300",
+            : "group relative text-sm font-medium tracking-tight transition-all duration-300",
           "transition-all duration-300 active:scale-[0.98]",
           active
             ? "text-[var(--fg)]"
@@ -246,7 +245,6 @@ export default function Header() {
         )}
       >
         <div className="grid h-full grid-cols-[1fr_auto] items-center gap-3 md:grid-cols-3">
-          {/* LEFT */}
           <div className="min-w-0">
             <Link
               href="/"
@@ -262,7 +260,6 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* CENTER */}
           <nav className="hidden items-center justify-center gap-6 md:flex">
             {navLink("/", "Home")}
             <span className="text-[var(--muted)]">|</span>
@@ -271,7 +268,6 @@ export default function Header() {
             {navLink("/contact", "Contact")}
           </nav>
 
-          {/* RIGHT */}
           <div className="flex items-center justify-end gap-2 sm:gap-3">
             {loggedIn !== null && (
               <>
@@ -312,8 +308,7 @@ export default function Header() {
 
                     <div
                       className={clsx(
-                        "absolute right-0 top-full mt-2 origin-top-right rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl transition-all duration-200",
-                        "w-56",
+                        "absolute right-0 top-full mt-2 w-56 origin-top-right rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl transition-all duration-200",
                         dropdownOpen
                           ? "pointer-events-auto scale-100 opacity-100"
                           : "pointer-events-none scale-95 opacity-0"
@@ -492,8 +487,6 @@ export default function Header() {
       </div>
 
       <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[var(--border)]/60 to-transparent" />
-
-      <CartToggleButton />
     </header>
   );
 }

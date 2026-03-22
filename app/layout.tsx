@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import CartToggleButton from "@/components/cart/CartToggleButton";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
@@ -55,6 +56,7 @@ export default function RootLayout({
         <Providers>
           <div className="flex min-h-screen flex-col">
             <Header />
+            <CartToggleButton />
 
             <main className="relative flex-1 w-full">
               {children}
