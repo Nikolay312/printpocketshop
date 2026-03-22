@@ -12,45 +12,56 @@ export default async function OrdersPage() {
   const orders = await getOrdersForUser(userId);
 
   return (
-    <div className="space-y-24">
+    <div className="mx-auto w-full max-w-5xl space-y-6 sm:space-y-8">
+      <section className="rounded-3xl bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
+        {orders.length === 0 ? (
+          <div className="mx-auto flex max-w-xl flex-col items-start justify-center py-6 sm:py-10">
 
-      {/* ================= ORDERS SURFACE ================= */}
-      <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-        <div className="px-24 py-24">
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Your order history will appear here
+            </h2>
 
-          {orders.length === 0 ? (
-            <div className="max-w-xl space-y-6">
-              <h3 className="text-xl font-semibold tracking-tight text-foreground">
-                No orders yet
-              </h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-[15px]">
+              Once you complete a purchase, your orders will be listed here for
+              quick access on mobile and desktop.
+            </p>
 
-              <p className="text-sm text-muted leading-relaxed">
-                Once you complete a purchase, your orders will appear here.
+            <div className="mt-6">
+              <Link
+                href="/shop"
+                className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-background transition-transform duration-200 hover:-translate-y-0.5 sm:px-6"
+              >
+                Browse templates
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5 sm:space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Order history
+                </div>
+                <h2 className="mt-3 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                  {orders.length} {orders.length === 1 ? "order" : "orders"}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  Access your completed purchases, invoices, and related details.
+                </p>
+              </div>
+            </div>
+
+            <OrdersList orders={orders} />
+
+            <div className="rounded-2xl bg-muted/40 px-4 py-4 sm:px-5">
+              <p className="text-sm leading-6 text-muted-foreground">
+                Invoices are attached to each completed order and can be accessed
+                directly from the order details view.
               </p>
-
-              <div className="pt-2">
-                <Link
-                  href="/shop"
-                  className="inline-flex items-center justify-center rounded-2xl bg-foreground px-10 py-4 text-sm font-semibold text-background shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
-                >
-                  Browse templates
-                </Link>
-              </div>
             </div>
-          ) : (
-            <div className="space-y-14">
-              <OrdersList orders={orders} />
-
-              <div className="rounded-2xl border border-border bg-muted/30 px-8 py-6 text-sm text-muted">
-                Invoices are attached to each completed order and can be
-                accessed directly from the order details view.
-              </div>
-            </div>
-          )}
-
-        </div>
+          </div>
+        )}
       </section>
-
     </div>
   );
 }

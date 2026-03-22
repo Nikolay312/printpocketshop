@@ -24,7 +24,8 @@ export default function AccountSettingsClient({
 
   const [passwordSaving, setPasswordSaving] =
     useState<PasswordSavingState>("idle");
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState<string | null>(null);
+  const [passwordErrorMessage, setPasswordErrorMessage] =
+    useState<string | null>(null);
 
   const rules = useMemo(() => {
     return {
@@ -119,21 +120,25 @@ export default function AccountSettingsClient({
   };
 
   return (
-    <div className="space-y-24">
-      <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-        <div className="px-24 py-24">
-          <section className="space-y-8 py-10 first:pt-0">
-            <div className="grid gap-10 lg:grid-cols-[280px_1fr]">
-              <div className="space-y-3">
-                <h3 className="text-base font-semibold text-foreground">
+    <div className="mx-auto w-full max-w-5xl space-y-6 sm:space-y-8">
+
+      <section className="space-y-6 sm:space-y-8">
+        <div className="rounded-3xl bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
+          <div className="grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
+            <div className="space-y-3">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                   Change password
-                </h3>
-                <p className="text-sm text-muted leading-relaxed">
-                  Update your credentials to keep your account secure.
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Update your credentials to keep your account secure across all
+                  devices.
                 </p>
               </div>
+            </div>
 
-              <form onSubmit={handlePasswordChange} className="max-w-md space-y-6">
+            <form onSubmit={handlePasswordChange} className="space-y-5 sm:space-y-6">
+              <div className="grid gap-4 sm:gap-5">
                 <Field label="Current password">
                   <Input
                     type={showPasswords ? "text" : "password"}
@@ -161,91 +166,91 @@ export default function AccountSettingsClient({
                     />
                   </Field>
                 )}
-
-                <button
-                  type="button"
-                  onClick={() => setShowPasswords(!showPasswords)}
-                  className="text-xs text-muted transition hover:text-foreground"
-                >
-                  {showPasswords ? "Hide passwords" : "Show passwords"}
-                </button>
-
-                <div className="flex items-center gap-4 pt-2">
-                  <Button
-                    type="submit"
-                    disabled={!isValid || passwordSaving === "saving"}
-                  >
-                    Update password
-                  </Button>
-
-                  <span className="text-sm transition-all duration-300">
-                    {passwordSaving === "saving" && (
-                      <span className="animate-pulse text-muted">Saving…</span>
-                    )}
-                    {passwordSaving === "saved" && (
-                      <span className="text-emerald-600">Password updated</span>
-                    )}
-                    {passwordSaving === "error" && (
-                      <span className="text-red-600">{passwordErrorMessage}</span>
-                    )}
-                  </span>
-                </div>
-              </form>
-            </div>
-          </section>
-
-          <div className="border-t border-border" />
-
-          <section className="space-y-8 py-10">
-            <div>
-              <h3 className="text-base font-semibold text-foreground">
-                Notifications
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              <NotificationCard
-                label="Receipts & invoices"
-                description="Includes purchase confirmations, payment receipts, and invoice delivery for completed orders."
-                required
-              />
-
-              <NotificationCard
-                label="Security notifications"
-                description="Includes password changes and important account-related security alerts."
-                required
-              />
-
-              <NotificationCard
-                label="Product updates"
-                description="Get notified when products you purchased receive meaningful updates, improvements, or new files."
-                checked={productUpdates}
-                onChange={handleToggleProductUpdates}
-                saving={notificationSaving === "saving"}
-                disabled={notificationSaving === "saving"}
-              />
-
-              <div className="min-h-[20px]">
-                {notificationSaving === "saved" && (
-                  <p className="text-sm text-emerald-600 transition-all duration-300">
-                    Notification preferences updated.
-                  </p>
-                )}
-
-                {notificationSaving === "error" && notificationError && (
-                  <p className="text-sm text-red-600 transition-all duration-300">
-                    {notificationError}
-                  </p>
-                )}
               </div>
+
+              <button
+                type="button"
+                onClick={() => setShowPasswords(!showPasswords)}
+                className="inline-flex min-h-11 items-center text-sm font-medium text-muted-foreground transition hover:text-foreground"
+              >
+                {showPasswords ? "Hide passwords" : "Show passwords"}
+              </button>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <Button
+                  type="submit"
+                  disabled={!isValid || passwordSaving === "saving"}
+                >
+                  {passwordSaving === "saving" ? "Updating..." : "Update password"}
+                </Button>
+
+                <div className="min-h-[24px] text-sm">
+                  {passwordSaving === "saving" && (
+                    <span className="animate-pulse text-muted-foreground">
+                      Saving changes…
+                    </span>
+                  )}
+                  {passwordSaving === "saved" && (
+                    <span className="text-emerald-600">Password updated</span>
+                  )}
+                  {passwordSaving === "error" && (
+                    <span className="text-red-600">{passwordErrorMessage}</span>
+                  )}
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div className="rounded-3xl bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
+          <div className="mb-6 space-y-2">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              Email preferences
+            </h2>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              Control which account and product emails you receive while keeping
+              essential operational messages enabled.
+            </p>
+          </div>
+
+          <div className="space-y-3 sm:space-y-4">
+            <NotificationCard
+              label="Receipts & invoices"
+              description="Includes purchase confirmations, payment receipts, and invoice delivery for completed orders."
+              required
+            />
+
+            <NotificationCard
+              label="Security notifications"
+              description="Includes password changes and important account-related security alerts."
+              required
+            />
+
+            <NotificationCard
+              label="Product updates"
+              description="Get notified when products you purchased receive meaningful updates, improvements, or new files."
+              checked={productUpdates}
+              onChange={handleToggleProductUpdates}
+              saving={notificationSaving === "saving"}
+              disabled={notificationSaving === "saving"}
+            />
+
+            <div className="min-h-[22px] px-1">
+              {notificationSaving === "saved" && (
+                <p className="text-sm text-emerald-600">
+                  Notification preferences updated.
+                </p>
+              )}
+
+              {notificationSaving === "error" && notificationError && (
+                <p className="text-sm text-red-600">{notificationError}</p>
+              )}
             </div>
-          </section>
+          </div>
+        </div>
 
-          <div className="border-t border-border" />
-
-          <section className="py-10 last:pb-0">
-            <DangerZone />
-          </section>
+        <div className="rounded-3xl bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
+          <DangerZone />
         </div>
       </section>
     </div>
@@ -260,7 +265,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block space-y-2">
+    <label className="block space-y-2.5">
       <span className="text-sm font-medium text-foreground">{label}</span>
       {children}
     </label>
@@ -285,27 +290,25 @@ function NotificationCard({
   saving?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-background p-5">
-      <div className="flex items-start justify-between gap-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-foreground">
-              {label}
-            </p>
+    <div className="rounded-2xl bg-muted/35 p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">{label}</p>
 
             {required && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+              <span className="rounded-full bg-background px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Required
               </span>
             )}
           </div>
 
-          <p className="text-xs leading-relaxed text-muted">
+          <p className="text-sm leading-6 text-muted-foreground">
             {description}
           </p>
 
           {saving && (
-            <p className="mt-1 animate-pulse text-xs text-muted">
+            <p className="animate-pulse text-xs font-medium text-muted-foreground">
               Saving…
             </p>
           )}
@@ -318,20 +321,22 @@ function NotificationCard({
             disabled={disabled || saving}
             aria-pressed={checked}
             aria-label={label}
-            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 ease-out focus:outline-none ${
-              checked
-                ? "bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.18)]"
-                : "border border-border bg-slate-200"
-            } ${disabled ? "cursor-not-allowed opacity-60" : "hover:scale-[1.03] active:scale-[0.97]"}`}
+            className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-all duration-300 ease-out focus:outline-none ${
+              checked ? "bg-emerald-500" : "bg-slate-300"
+            } ${
+              disabled
+                ? "cursor-not-allowed opacity-60"
+                : "hover:scale-[1.03] active:scale-[0.97]"
+            }`}
           >
             <span
-              className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-300 ease-out ${
-                checked ? "translate-x-6" : "translate-x-1"
+              className={`inline-block h-6 w-6 rounded-full bg-white shadow-sm transition-all duration-300 ease-out ${
+                checked ? "translate-x-7" : "translate-x-1"
               }`}
             />
           </button>
         ) : (
-          <div className="self-center rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+          <div className="inline-flex w-fit shrink-0 items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
             Always enabled
           </div>
         )}
@@ -377,55 +382,60 @@ function DangerZone() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-muted/20 p-7">
-      <div className="flex justify-between gap-6">
-        <div>
-          <h3 className="font-semibold text-foreground">Delete account</h3>
-          <p className="text-sm text-muted">
-            This will permanently remove your account and all associated data.
-          </p>
-        </div>
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          Delete account
+        </h2>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          This action permanently removes your account and associated data. It
+          cannot be undone.
+        </p>
+      </div>
 
-        {!confirming && (
+      {!confirming && (
+        <div className="pt-1">
           <Button variant="danger" onClick={() => setConfirming(true)}>
             Delete account
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {confirming && (
-        <div className="mt-6 space-y-4 rounded-xl border border-red-200 bg-red-50/40 p-5">
-          <p className="text-sm font-medium text-red-700">
-            Enter your password to confirm deletion.
-          </p>
+        <div className="rounded-2xl bg-red-50/70 p-4 sm:p-5">
+          <div className="space-y-4">
+            <p className="text-sm font-medium text-red-700">
+              Enter your password to confirm permanent deletion.
+            </p>
 
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <div className="flex gap-3">
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              disabled={loading || !password}
-            >
-              {loading ? "Deleting..." : "Yes, delete permanently"}
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                variant="danger"
+                onClick={handleDelete}
+                disabled={loading || !password}
+              >
+                {loading ? "Deleting..." : "Yes, delete permanently"}
+              </Button>
 
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setConfirming(false);
-                setPassword("");
-                setError(null);
-              }}
-            >
-              Cancel
-            </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setConfirming(false);
+                  setPassword("");
+                  setError(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -442,19 +452,21 @@ function PasswordRules({ rules }: { rules: Record<string, boolean> }) {
   ];
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-4">
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-2 text-sm">
-          <span
-            className={`h-2 w-2 rounded-full ${
-              item.ok ? "bg-emerald-500" : "bg-muted-foreground/30"
-            }`}
-          />
-          <span className={item.ok ? "text-foreground" : "text-muted"}>
-            {item.label}
-          </span>
-        </div>
-      ))}
+    <div className="rounded-2xl bg-muted/35 p-4">
+      <div className="space-y-2.5">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-2.5 text-sm">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                item.ok ? "bg-emerald-500" : "bg-muted-foreground/30"
+              }`}
+            />
+            <span className={item.ok ? "text-foreground" : "text-muted-foreground"}>
+              {item.label}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
