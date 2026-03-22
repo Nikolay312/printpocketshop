@@ -10,47 +10,124 @@ const MARGIN = 12;
 const DRAG_THRESHOLD = 6;
 const STORAGE_KEY = "pps-cart-button-position";
 
+/**
+ * Keep this slightly larger than the actual visible header height
+ * so the button never enters header territory.
+ */
+const HEADER_SAFE_BOTTOM = 92;
+
 type Position = {
   x: number;
   y: number;
 };
 
-function clampPosition(pos: Position): Position {
-  if (typeof window === "undefined") return pos;
+type FrameBounds = {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+};
 
-  const maxX = window.innerWidth - BUTTON_SIZE - MARGIN;
-  const maxY = window.innerHeight - BUTTON_SIZE - MARGIN;
+function getFrameBounds(): FrameBounds {
+  if (typeof window === "undefined") {
+    return {
+      minX: MARGIN,
+      maxX: MARGIN,
+      minY: HEADER_SAFE_BOTTOM + MARGIN,
+      maxY: HEADER_SAFE_BOTTOM + MARGIN,
+    };
+  }
 
   return {
-    x: Math.min(Math.max(pos.x, MARGIN), maxX),
-    y: Math.min(Math.max(pos.y, MARGIN), maxY),
+    minX: MARGIN,
+    maxX: Math.max(MARGIN, window.innerWidth - BUTTON_SIZE - MARGIN),
+    minY: HEADER_SAFE_BOTTOM + MARGIN,
+    maxY: Math.max(
+      HEADER_SAFE_BOTTOM + MARGIN,
+      window.innerHeight - BUTTON_SIZE - MARGIN
+    ),
+  };
+}
+
+function clampToBounds(pos: Position, bounds: FrameBounds): Position {
+  return {
+    x: Math.min(Math.max(pos.x, bounds.minX), bounds.maxX),
+    y: Math.min(Math.max(pos.y, bounds.minY), bounds.maxY),
+  };
+}
+
+/**
+ * Project any dragged point to the nearest edge of the allowed frame.
+ * This keeps the cart moving only around the website perimeter,
+ * not freely through the middle of the page.
+ */
+function projectToFrame(pos: Position): Position {
+  if (typeof window === "undefined") return pos;
+
+  const bounds = getFrameBounds();
+  const clamped = clampToBounds(pos, bounds);
+
+  const distanceToLeft = Math.abs(clamped.x - bounds.minX);
+  const distanceToRight = Math.abs(clamped.x - bounds.maxX);
+  const distanceToTop = Math.abs(clamped.y - bounds.minY);
+  const distanceToBottom = Math.abs(clamped.y - bounds.maxY);
+
+  const minDistance = Math.min(
+    distanceToLeft,
+    distanceToRight,
+    distanceToTop,
+    distanceToBottom
+  );
+
+  if (minDistance === distanceToLeft) {
+    return { x: bounds.minX, y: clamped.y };
+  }
+
+  if (minDistance === distanceToRight) {
+    return { x: bounds.maxX, y: clamped.y };
+  }
+
+  if (minDistance === distanceToTop) {
+    return { x: clamped.x, y: bounds.minY };
+  }
+
+  return { x: clamped.x, y: bounds.maxY };
+}
+
+function getDefaultPosition(): Position {
+  if (typeof window === "undefined") {
+    return {
+      x: MARGIN,
+      y: HEADER_SAFE_BOTTOM + MARGIN,
+    };
+  }
+
+  const bounds = getFrameBounds();
+
+  return {
+    x: bounds.maxX,
+    y: bounds.minY,
   };
 }
 
 function getInitialPosition(): Position {
-  if (typeof window === "undefined") return { x: 0, y: 0 };
+  if (typeof window === "undefined") return getDefaultPosition();
 
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      return clampPosition(JSON.parse(saved));
+      const parsed = JSON.parse(saved) as Position;
+      return projectToFrame(parsed);
     }
   } catch {}
 
-  return clampPosition({
-    x: window.innerWidth - BUTTON_SIZE - MARGIN,
-    y: window.innerWidth >= 1024
-      ? window.innerHeight / 2 - BUTTON_SIZE / 2
-      : 100,
-  });
+  return getDefaultPosition();
 }
 
 export default function CartToggleButton() {
   const { cartItems, openCart } = useCart();
 
-  const [position, setPosition] = useState<Position>(() =>
-    getInitialPosition()
-  );
+  const [position, setPosition] = useState<Position>(() => getInitialPosition());
   const [isDragging, setIsDragging] = useState(false);
 
   const dragRef = useRef({
@@ -67,28 +144,20 @@ export default function CartToggleButton() {
     return cartItems.reduce((sum, item) => sum + item.quantity, 0);
   }, [cartItems]);
 
-  /* =========================
-     SAVE POSITION
-  ========================= */
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
   }, [position]);
 
-  /* =========================
-     HANDLE RESIZE
-  ========================= */
   useEffect(() => {
     const handleResize = () => {
-      setPosition((prev) => clampPosition(prev));
+      setPosition((prev) => projectToFrame(prev));
     };
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  /* =========================
-     DRAG LOGIC
-  ========================= */
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     dragRef.current = {
       pointerId: e.pointerId,
@@ -118,12 +187,12 @@ export default function CartToggleButton() {
 
     if (!dragRef.current.moved) return;
 
-    setPosition(
-      clampPosition({
-        x: dragRef.current.originX + dx,
-        y: dragRef.current.originY + dy,
-      })
-    );
+    const rawNext = {
+      x: dragRef.current.originX + dx,
+      y: dragRef.current.originY + dy,
+    };
+
+    setPosition(projectToFrame(rawNext));
   };
 
   const endDrag = (pointerId: number) => {
@@ -131,7 +200,9 @@ export default function CartToggleButton() {
 
     dragRef.current.pointerId = null;
 
-    setTimeout(() => setIsDragging(false), 0);
+    window.setTimeout(() => {
+      setIsDragging(false);
+    }, 0);
   };
 
   const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -180,6 +251,7 @@ export default function CartToggleButton() {
           strokeLinecap="round"
           strokeLinejoin="round"
           className="h-5 w-5 text-foreground"
+          aria-hidden="true"
         >
           <circle cx="9" cy="21" r="1" />
           <circle cx="20" cy="21" r="1" />
