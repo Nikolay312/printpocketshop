@@ -5,8 +5,8 @@ import { useCart } from "@/components/cart/CartContext";
 import CartDrawer from "./CartDrawer";
 import clsx from "clsx";
 
-const BUTTON_WIDTH = 56;
-const BUTTON_HEIGHT = 56;
+const BUTTON_WIDTH = 48;
+const BUTTON_HEIGHT = 48;
 const MARGIN = 12;
 const DRAG_THRESHOLD = 6;
 const STORAGE_KEY = "pps-cart-button-position";
@@ -174,10 +174,10 @@ export default function CartToggleButton() {
     const nextSide: Side =
       e.clientX <= window.innerWidth / 2 ? "left" : "right";
 
-    setPosition({
+    setPosition((prev) => ({
       side: nextSide,
-      y: nextY,
-    });
+      y: prev.y + (nextY - prev.y) * 0.35, // smoothing interpolation
+    }));
   };
 
   const endDrag = (pointerId: number) => {
@@ -222,7 +222,7 @@ export default function CartToggleButton() {
           "border border-black/5 bg-white/95 backdrop-blur-md",
           "shadow-[0_12px_30px_rgba(15,23,42,0.14),0_2px_8px_rgba(15,23,42,0.08)]",
           "touch-none select-none",
-          "transition-[transform,box-shadow,background-color] duration-200",
+          "transition-[transform,box-shadow,background-color,top,left] duration-300 ease-out",
           isDragging
             ? "scale-[1.05] shadow-[0_18px_42px_rgba(15,23,42,0.22),0_4px_14px_rgba(15,23,42,0.12)]"
             : "hover:scale-[1.03] hover:shadow-[0_16px_38px_rgba(15,23,42,0.18),0_4px_12px_rgba(15,23,42,0.1)] active:scale-[0.96]",
