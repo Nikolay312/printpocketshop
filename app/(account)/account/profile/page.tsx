@@ -44,7 +44,6 @@ export default async function AccountProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 sm:space-y-8">
-
       <section className="overflow-hidden rounded-3xl bg-card shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
         <div className="relative overflow-hidden px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.10),transparent_32%),linear-gradient(to_bottom,rgba(255,255,255,0.02),transparent)]" />
@@ -58,13 +57,9 @@ export default async function AccountProfilePage() {
               </div>
 
               <div className="min-w-0">
-                <div className="mb-2 inline-flex items-center rounded-full bg-muted px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Account profile
-                </div>
-
-                <h2 className="truncate text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                   {user.name ?? "User"}
-                </h2>
+                </h1>
 
                 <p className="mt-1 break-all text-sm text-muted-foreground sm:text-base">
                   {user.email}
@@ -109,16 +104,6 @@ export default async function AccountProfilePage() {
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <div className="rounded-3xl bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
-          <div className="mb-5 sm:mb-6">
-            <h3 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              Personal details
-            </h3>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Your account information is organized for quick access across all
-              devices.
-            </p>
-          </div>
-
           <div className="space-y-3">
             <DetailRow label="Full name" value={user.name ?? "Not set"} />
             <DetailRow label="Email address" value={user.email} />

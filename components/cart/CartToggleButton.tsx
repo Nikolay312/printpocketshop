@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useCart } from "@/components/cart/CartContext";
 import CartDrawer from "./CartDrawer";
 import clsx from "clsx";
@@ -10,6 +15,7 @@ const BUTTON_HEIGHT = 48;
 const MARGIN = 12;
 const DRAG_THRESHOLD = 6;
 const STORAGE_KEY = "pps-cart-button-position";
+const POSITION_EVENT = "pps-cart-button-position-change";
 
 /**
  * Keeps the button below the header / sign-in area on both desktop and mobile.
@@ -35,6 +41,13 @@ type VerticalBounds = {
   maxY: number;
 };
 
+const DEFAULT_POSITION: Position = {
+  side: "right",
+  y: HEADER_SAFE_BOTTOM + MARGIN,
+};
+
+const DEFAULT_POSITION_SNAPSHOT = JSON.stringify(DEFAULT_POSITION);
+
 function getVerticalBounds(): VerticalBounds {
   if (typeof window === "undefined") {
     return {
@@ -56,73 +69,121 @@ function clampY(y: number, bounds: VerticalBounds): number {
   return Math.min(Math.max(y, bounds.minY), bounds.maxY);
 }
 
-function getXForSide(side: Side): number {
-  if (typeof window === "undefined") {
-    return MARGIN;
-  }
-
-  return side === "left"
-    ? MARGIN
-    : Math.max(MARGIN, window.innerWidth - BUTTON_WIDTH - MARGIN);
-}
-
-/**
- * Default position:
- * right side, directly under the sign-in button / header area.
- */
-function getDefaultPosition(): Position {
-  const bounds = getVerticalBounds();
-
-  return {
-    side: "right",
-    y: bounds.minY,
-  };
-}
-
 function normalizePosition(pos: Partial<Position> | null | undefined): Position {
   const bounds = getVerticalBounds();
-  const safeDefault = getDefaultPosition();
 
-  if (!pos) return safeDefault;
+  if (!pos) {
+    return {
+      side: DEFAULT_POSITION.side,
+      y: clampY(DEFAULT_POSITION.y, bounds),
+    };
+  }
 
   const side: Side = pos.side === "left" ? "left" : "right";
   const y =
     typeof pos.y === "number" && Number.isFinite(pos.y)
       ? clampY(pos.y, bounds)
-      : safeDefault.y;
+      : clampY(DEFAULT_POSITION.y, bounds);
 
   return { side, y };
 }
 
-function getInitialPosition(): Position {
-  if (typeof window === "undefined") return getDefaultPosition();
+function readStoredPosition(): Position {
+  if (typeof window === "undefined") {
+    return DEFAULT_POSITION;
+  }
 
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      return normalizePosition(JSON.parse(saved) as Partial<Position>);
-    }
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return normalizePosition(DEFAULT_POSITION);
+
+    return normalizePosition(JSON.parse(raw) as Partial<Position>);
+  } catch {
+    return normalizePosition(DEFAULT_POSITION);
+  }
+}
+
+function persistPosition(position: Position) {
+  if (typeof window === "undefined") return;
+
+  const normalized = normalizePosition(position);
+
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
   } catch {}
 
-  return getDefaultPosition();
+  window.dispatchEvent(new Event(POSITION_EVENT));
+}
+
+function subscribePositionStore(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleChange = () => onStoreChange();
+
+  window.addEventListener("resize", handleChange);
+  window.addEventListener("storage", handleChange);
+  window.addEventListener(POSITION_EVENT, handleChange);
+
+  return () => {
+    window.removeEventListener("resize", handleChange);
+    window.removeEventListener("storage", handleChange);
+    window.removeEventListener(POSITION_EVENT, handleChange);
+  };
+}
+
+/**
+ * Return a stable primitive snapshot so React can compare it safely.
+ */
+function getPositionSnapshot(): string {
+  if (typeof window === "undefined") {
+    return DEFAULT_POSITION_SNAPSHOT;
+  }
+
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) ?? DEFAULT_POSITION_SNAPSHOT;
+  } catch {
+    return DEFAULT_POSITION_SNAPSHOT;
+  }
+}
+
+function getPositionServerSnapshot(): string {
+  return DEFAULT_POSITION_SNAPSHOT;
 }
 
 export default function CartToggleButton() {
   const { cartItems, openCart } = useCart();
 
-  const [position, setPosition] = useState<Position>(() => getInitialPosition());
-  const [isDragging, setIsDragging] = useState(false);
+  const persistedSnapshot = useSyncExternalStore(
+    subscribePositionStore,
+    getPositionSnapshot,
+    getPositionServerSnapshot
+  );
 
-  const positionRef = useRef<Position>(position);
+  const persistedPosition = useMemo(() => {
+    try {
+      return normalizePosition(
+        JSON.parse(persistedSnapshot) as Partial<Position>
+      );
+    } catch {
+      return normalizePosition(DEFAULT_POSITION);
+    }
+  }, [persistedSnapshot]);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [floatingPosition, setFloatingPosition] = useState<Position | null>(null);
+
   const animationFrameRef = useRef<number | null>(null);
-  const targetRef = useRef<Position>(position);
+  const floatingPositionRef = useRef<Position | null>(null);
+  const targetRef = useRef<Position>(DEFAULT_POSITION);
 
   const dragRef = useRef({
     pointerId: null as number | null,
     startX: 0,
     startY: 0,
     originSide: "right" as Side,
-    originY: 0,
+    originY: DEFAULT_POSITION.y,
     moved: false,
     activeSide: "right" as Side,
   });
@@ -132,34 +193,7 @@ export default function CartToggleButton() {
     return cartItems.reduce((sum, item) => sum + item.quantity, 0);
   }, [cartItems]);
 
-  useEffect(() => {
-    positionRef.current = position;
-  }, [position]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
-  }, [position]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const next = normalizePosition(positionRef.current);
-      targetRef.current = next;
-      positionRef.current = next;
-      setPosition(next);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current !== null) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
+  const renderedPosition = floatingPosition ?? persistedPosition;
 
   const stopAnimation = () => {
     if (animationFrameRef.current !== null) {
@@ -168,11 +202,20 @@ export default function CartToggleButton() {
     }
   };
 
-  const animateToTarget = (lerp: number) => {
+  const setFloating = (next: Position | null) => {
+    floatingPositionRef.current = next;
+    setFloatingPosition(next);
+  };
+
+  const getCurrentPosition = (): Position => {
+    return floatingPositionRef.current ?? persistedPosition;
+  };
+
+  const animateToTarget = (lerp: number, onComplete?: () => void) => {
     stopAnimation();
 
     const tick = () => {
-      const current = positionRef.current;
+      const current = getCurrentPosition();
       const target = normalizePosition(targetRef.current);
 
       const nextY = current.y + (target.y - current.y) * lerp;
@@ -183,8 +226,7 @@ export default function CartToggleButton() {
         y: closeEnough ? target.y : nextY,
       };
 
-      positionRef.current = next;
-      setPosition(next);
+      setFloating(next);
 
       if (!closeEnough || next.side !== target.side) {
         animationFrameRef.current = window.requestAnimationFrame(tick);
@@ -192,6 +234,7 @@ export default function CartToggleButton() {
       }
 
       animationFrameRef.current = null;
+      onComplete?.();
     };
 
     animationFrameRef.current = window.requestAnimationFrame(tick);
@@ -200,15 +243,20 @@ export default function CartToggleButton() {
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     stopAnimation();
 
+    const current = getCurrentPosition();
+
     dragRef.current = {
       pointerId: e.pointerId,
       startX: e.clientX,
       startY: e.clientY,
-      originSide: positionRef.current.side,
-      originY: positionRef.current.y,
+      originSide: current.side,
+      originY: current.y,
       moved: false,
-      activeSide: positionRef.current.side,
+      activeSide: current.side,
     };
+
+    targetRef.current = current;
+    setFloating(current);
 
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -260,10 +308,19 @@ export default function CartToggleButton() {
 
     dragRef.current.pointerId = null;
 
-    if (dragRef.current.moved) {
-      targetRef.current = normalizePosition(targetRef.current);
-      animateToTarget(SNAP_LERP);
+    if (!dragRef.current.moved) {
+      setFloating(null);
+      return;
     }
+
+    const snapped = normalizePosition(targetRef.current);
+    targetRef.current = snapped;
+    persistPosition(snapped);
+
+    animateToTarget(SNAP_LERP, () => {
+      setFloating(null);
+      setIsDragging(false);
+    });
 
     window.setTimeout(() => {
       setIsDragging(false);
@@ -293,12 +350,12 @@ export default function CartToggleButton() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
         style={{
-          left: `${getXForSide(position.side)}px`,
-          top: `${position.y}px`,
+          top: `${renderedPosition.y}px`,
+          left: renderedPosition.side === "left" ? `${MARGIN}px` : "auto",
+          right: renderedPosition.side === "right" ? `${MARGIN}px` : "auto",
         }}
         className={clsx(
-          "fixed z-40 flex items-center justify-center",
-          "h-12 w-12 rounded-full",
+          "fixed z-40 flex h-12 w-12 items-center justify-center rounded-full",
           "border border-black/5 bg-white/95 backdrop-blur-md",
           "shadow-[0_10px_24px_rgba(15,23,42,0.14),0_2px_8px_rgba(15,23,42,0.08)]",
           "touch-none select-none will-change-transform",
@@ -332,8 +389,8 @@ export default function CartToggleButton() {
         {itemCount > 0 && (
           <span
             className={clsx(
-              "absolute -right-1 -top-1 flex min-w-[20px] items-center justify-center rounded-full px-1.5",
-              "h-5 text-[10px] font-semibold leading-none text-white",
+              "absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5",
+              "text-[10px] font-semibold leading-none text-white",
               "bg-black shadow-[0_4px_10px_rgba(0,0,0,0.22)]"
             )}
           >

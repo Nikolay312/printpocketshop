@@ -28,8 +28,49 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-full lg:w-72 shrink-0">
-      <nav className="space-y-2">
+    <aside className="w-full shrink-0 lg:w-72">
+      {/* Mobile */}
+      <div className="lg:hidden">
+        <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <nav className="flex min-w-max gap-2 pb-1">
+            {NAV_LINKS.map((link) => {
+              const isActive =
+                link.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname === link.href ||
+                    pathname.startsWith(link.href + "/");
+
+              const Icon = link.icon;
+
+              return (
+                <Link key={link.href} href={link.href} className="shrink-0">
+                  <motion.div
+                    whileTap={{ scale: 0.98 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 350,
+                      damping: 25,
+                    }}
+                    className={clsx(
+                      "flex min-h-11 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium whitespace-nowrap",
+                      "transition-all duration-200",
+                      isActive
+                        ? "bg-foreground text-background shadow-sm"
+                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{link.label}</span>
+                  </motion.div>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Desktop */}
+      <nav className="hidden space-y-2 lg:block">
         {NAV_LINKS.map((link) => {
           const isActive =
             link.href === "/admin"
@@ -69,7 +110,6 @@ export default function AdminSidebar() {
                 )}
 
                 <Icon className="relative z-10 h-4.5 w-4.5" />
-
                 <span className="relative z-10">{link.label}</span>
               </motion.div>
             </Link>
