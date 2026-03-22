@@ -8,9 +8,14 @@ import clsx from "clsx";
 const BUTTON_SIZE = 48;
 const MARGIN = 12;
 const DRAG_THRESHOLD = 6;
-const STORAGE_KEY = "pps-cart-button-position-v3"; // 🔥 new key to reset position
+const STORAGE_KEY = "pps-cart-button-position";
 
-const HEADER_SAFE_BOTTOM = 92;
+/**
+ * Top frame line for the homepage.
+ * This places the cart under the "Sign in" button by default
+ * and keeps it out of the header/nav area.
+ */
+const TOP_FRAME_Y = 156;
 
 type Position = {
   x: number;
@@ -29,19 +34,16 @@ function getFrameBounds(): FrameBounds {
     return {
       minX: MARGIN,
       maxX: MARGIN,
-      minY: HEADER_SAFE_BOTTOM + MARGIN,
-      maxY: HEADER_SAFE_BOTTOM + MARGIN,
+      minY: TOP_FRAME_Y,
+      maxY: TOP_FRAME_Y,
     };
   }
 
   return {
     minX: MARGIN,
     maxX: Math.max(MARGIN, window.innerWidth - BUTTON_SIZE - MARGIN),
-    minY: HEADER_SAFE_BOTTOM + MARGIN,
-    maxY: Math.max(
-      HEADER_SAFE_BOTTOM + MARGIN,
-      window.innerHeight - BUTTON_SIZE - MARGIN
-    ),
+    minY: TOP_FRAME_Y,
+    maxY: Math.max(TOP_FRAME_Y, window.innerHeight - BUTTON_SIZE - MARGIN),
   };
 }
 
@@ -52,32 +54,66 @@ function clampToBounds(pos: Position, bounds: FrameBounds): Position {
   };
 }
 
+/**
+ * Keep the cart button strictly on the outer homepage frame:
+ * - left side
+ * - right side
+ * - top frame line
+ * - bottom frame line
+ *
+ * It can move around corners and switch sides by dragging,
+ * but it can never enter the middle of the page.
+ */
 function projectToFrame(pos: Position): Position {
   if (typeof window === "undefined") return pos;
 
   const bounds = getFrameBounds();
   const clamped = clampToBounds(pos, bounds);
-  const viewportMidX = window.innerWidth / 2;
 
-  return {
-    x: clamped.x <= viewportMidX ? bounds.minX : bounds.maxX,
-    y: clamped.y,
-  };
+  const distanceToLeft = Math.abs(clamped.x - bounds.minX);
+  const distanceToRight = Math.abs(clamped.x - bounds.maxX);
+  const distanceToTop = Math.abs(clamped.y - bounds.minY);
+  const distanceToBottom = Math.abs(clamped.y - bounds.maxY);
+
+  const minDistance = Math.min(
+    distanceToLeft,
+    distanceToRight,
+    distanceToTop,
+    distanceToBottom
+  );
+
+  if (minDistance === distanceToLeft) {
+    return { x: bounds.minX, y: clamped.y };
+  }
+
+  if (minDistance === distanceToRight) {
+    return { x: bounds.maxX, y: clamped.y };
+  }
+
+  if (minDistance === distanceToTop) {
+    return { x: clamped.x, y: bounds.minY };
+  }
+
+  return { x: clamped.x, y: bounds.maxY };
 }
 
-/** ✅ DEFAULT = LEFT SIDE */
+/**
+ * Default start position:
+ * top-right corner of the homepage frame,
+ * directly under the "Sign in" button area.
+ */
 function getDefaultPosition(): Position {
   if (typeof window === "undefined") {
     return {
       x: MARGIN,
-      y: HEADER_SAFE_BOTTOM + MARGIN,
+      y: TOP_FRAME_Y,
     };
   }
 
   const bounds = getFrameBounds();
 
   return {
-    x: bounds.minX, // 👈 LEFT
+    x: bounds.maxX,
     y: bounds.minY,
   };
 }
@@ -87,11 +123,14 @@ function getInitialPosition(): Position {
 
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
+
     if (saved) {
       const parsed = JSON.parse(saved) as Position;
       return projectToFrame(parsed);
     }
-  } catch {}
+  } catch {
+    // Ignore invalid saved position and fall back to default
+  }
 
   return getDefaultPosition();
 }
