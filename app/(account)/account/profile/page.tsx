@@ -42,120 +42,170 @@ export default async function AccountProfilePage() {
 
   if (!user) redirect("/login");
 
-  const initial = user.name?.[0] ?? user.email[0].toUpperCase();
+  const initial = (user.name?.[0] ?? user.email[0] ?? "U").toUpperCase();
   const [fromColor, toColor] = getGradientFromString(user.email);
 
   return (
-    <div className="space-y-24">
+    <div className="space-y-6 sm:space-y-8">
+      <section className="overflow-hidden rounded-2xl border border-border/60 bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+        <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="flex flex-col gap-5 sm:gap-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div
+                className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${fromColor} ${toColor} text-xl font-semibold text-white shadow-md sm:h-20 sm:w-20 sm:rounded-full sm:text-2xl`}
+              >
+                {initial}
+              </div>
 
-      {/* ================= PROFILE SURFACE ================= */}
-      <section className="rounded-3xl border border-border bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-        <div className="px-24 py-24 space-y-20">
+              <div className="min-w-0 space-y-1">
+                <div className="inline-flex w-fit items-center rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  Profile
+                </div>
 
-          <div className="flex items-center gap-12">
-            <div
-              className={`h-28 w-28 rounded-full bg-gradient-to-br ${fromColor} ${toColor} flex items-center justify-center text-3xl font-semibold text-white shadow-md`}
-            >
-              {initial}
+                <h1 className="break-words text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                  {user.name ?? "User"}
+                </h1>
+
+                <p className="break-all text-sm text-muted-foreground sm:text-base">
+                  {user.email}
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                {user.name ?? "User"}
-              </h1>
-
-              <p className="text-sm text-muted">
-                {user.email}
-              </p>
+            <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
+              <InfoCard
+                label="Role"
+                value={formatRole(user.role)}
+              />
+              <InfoCard
+                label="Member since"
+                value={new Date(user.createdAt).toLocaleDateString()}
+              />
+              <InfoCard
+                label="Stripe customer"
+                value={user.stripeCustomerId ? "Linked" : "Not linked"}
+              />
             </div>
-          </div>
-
-          <div className="border-t border-border" />
-
-          <div className="max-w-3xl space-y-12">
-            <Detail label="Role" value={user.role} />
-
-            <Detail
-              label="Member since"
-              value={new Date(user.createdAt).toLocaleDateString()}
-            />
-
-            <Detail
-              label="Stripe customer"
-              value={user.stripeCustomerId ? "Linked" : "Not linked"}
-            />
           </div>
         </div>
       </section>
 
-      {/* =================  BILLING  ================= */}
-      <section className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-background to-muted/40 shadow-xl">
+      <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-background to-muted/40 shadow-sm">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_35%)]" />
 
-        <div className="px-24 py-24">
+        <div className="relative px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+            <div className="max-w-2xl space-y-4">
+              <div className="space-y-2">
+                <div className="inline-flex w-fit items-center rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground backdrop-blur">
+                  Billing
+                </div>
 
-          <div className="flex flex-col gap-16 lg:flex-row lg:items-center lg:justify-between">
-
-            {/* Left Content */}
-            <div className="space-y-8 max-w-2xl">
-
-              <div className="space-y-4">
-                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                   Billing & subscriptions
                 </h2>
 
-                <p className="text-sm text-muted leading-relaxed">
-                  Manage your payments, invoices, and subscription securely.
+                <p className="max-w-xl text-sm leading-6 text-muted-foreground">
+                  Manage your payments, invoices, and subscription details in one place.
                 </p>
               </div>
 
-              {/* Status Card */}
-              <div className="inline-flex items-center gap-4 rounded-2xl border border-border bg-background px-6 py-4 shadow-sm">
+              <div className="inline-flex min-h-12 w-full max-w-md items-center gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-3 shadow-sm backdrop-blur sm:w-auto">
                 <div
-                  className={`h-3 w-3 rounded-full ${
+                  className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${
                     user.stripeCustomerId
                       ? "bg-emerald-500"
                       : "bg-muted-foreground/40"
                   }`}
                 />
-
                 <div className="text-sm font-medium text-foreground">
                   {user.stripeCustomerId
                     ? "Billing profile connected"
                     : "No billing profile yet"}
                 </div>
               </div>
-
             </div>
 
-            {/* Right CTA Area */}
-            <div className="flex items-center">
-
+            <div className="w-full lg:w-auto">
               {user.stripeCustomerId ? (
-                <form action="/api/stripe/portal" method="POST">
+                <form action="/api/stripe/portal" method="POST" className="w-full lg:w-auto">
                   <button
                     type="submit"
-                    className="group relative inline-flex items-center justify-center rounded-2xl bg-foreground px-10 py-4 text-sm font-semibold text-background shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
+                    className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-background shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl lg:w-auto lg:px-8"
                   >
                     Open billing portal
                   </button>
                 </form>
               ) : (
-                <div className="rounded-2xl border border-dashed border-border px-10 py-4 text-sm text-muted">
+                <div className="flex min-h-12 items-center justify-center rounded-2xl border border-dashed border-border/70 px-4 py-3 text-center text-sm text-muted-foreground lg:px-6">
                   Billing portal available after first purchase
                 </div>
               )}
-
             </div>
-
           </div>
         </div>
       </section>
 
+      <section className="rounded-2xl border border-border/60 bg-background shadow-sm">
+        <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                Account details
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A quick overview of your account information.
+              </p>
+            </div>
+
+            <div className="divide-y divide-border/60 rounded-2xl border border-border/60 bg-muted/20">
+              <Detail label="Display name" value={user.name ?? "Not set"} />
+              <Detail label="Email address" value={user.email} />
+              <Detail label="Role" value={formatRole(user.role)} />
+              <Detail
+                label="Member since"
+                value={new Date(user.createdAt).toLocaleDateString()}
+              />
+              <Detail
+                label="Stripe customer"
+                value={user.stripeCustomerId ? "Linked" : "Not linked"}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
-/* ================= COMPONENT ================= */
+function formatRole(role: string) {
+  if (!role) return "User";
+
+  return role
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function InfoCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-muted/20 p-4 sm:p-5">
+      <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-semibold text-foreground sm:text-base">
+        {value}
+      </div>
+    </div>
+  );
+}
 
 function Detail({
   label,
@@ -165,11 +215,11 @@ function Detail({
   value: string;
 }) {
   return (
-    <div className="flex items-baseline justify-between border-b border-border pb-5">
-      <span className="text-xs uppercase tracking-wide text-muted">
+    <div className="flex flex-col gap-1 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:px-5">
+      <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </span>
-      <span className="text-base font-medium text-foreground">
+      <span className="break-words text-sm font-medium text-foreground sm:max-w-[60%] sm:text-right">
         {value}
       </span>
     </div>
