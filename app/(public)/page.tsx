@@ -42,31 +42,33 @@ export default async function HomePage() {
             />
           </div>
 
-          <div className="absolute inset-0 md:hidden bg-gradient-to-b from-black/85 via-black/55 to-black/25" />
-          <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-black/82 via-black/56 to-black/18" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/55 to-black/25 md:hidden" />
+          <div className="absolute inset-0 hidden bg-gradient-to-r from-black/82 via-black/56 to-black/18 md:block" />
           <div className="absolute inset-0 bg-black/10" />
         </div>
 
         <FadeIn>
           <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl items-center px-6 py-24 sm:px-8 lg:px-12">
-            <div className="max-w-2xl text-white">
-              <h1 className="text-4xl font-semibold leading-[1.02] tracking-[-0.045em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
-                Professional Digital Templates for Modern Work
-              </h1>
+            <div className="max-w-[680px] text-white">
+              <div className="flex flex-col gap-6 sm:gap-7 lg:gap-8">
+                <h1 className="max-w-[12ch] text-4xl font-semibold leading-[1.08] tracking-[-0.035em] text-white sm:text-5xl lg:text-6xl lg:leading-[1.04] xl:text-7xl">
+                  Digital Templates for Modern Work
+                </h1>
 
-              <p className="mt-5 max-w-xl text-base leading-7 text-white/82 sm:mt-6 sm:text-lg sm:leading-8">
-                Discover premium CV templates, business planners, ebooks, and
-                creative digital resources designed to save time and elevate
-                your brand.
-              </p>
+                <p className="max-w-[60ch] text-base leading-7 text-white/82 sm:text-lg sm:leading-8">
+                  Discover premium CV templates, business planners, ebooks, and
+                  creative digital resources designed to save time and elevate
+                  your brand.
+                </p>
 
-              <div className="mt-8 sm:mt-10">
-                <Link
-                  href="/shop"
-                  className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-7 text-base font-semibold text-white shadow-[0_18px_50px_rgba(0,0,0,0.28)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-[0_24px_70px_rgba(0,0,0,0.34)]"
-                >
-                  Shop Templates
-                </Link>
+                <div className="pt-2 sm:pt-3">
+                  <Link
+                    href="/shop"
+                    className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-7 text-base font-semibold text-white shadow-[0_18px_50px_rgba(0,0,0,0.28)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-[0_24px_70px_rgba(0,0,0,0.34)]"
+                  >
+                    Shop Templates
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -81,9 +83,6 @@ export default async function HomePage() {
           <div className="mx-auto max-w-7xl">
             <div className="mb-12 flex flex-col gap-6 sm:mb-16 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-sm font-medium uppercase tracking-[0.18em] text-gray-500">
-                  Curated Selection
-                </p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl">
                   Featured products
                 </h2>
