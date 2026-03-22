@@ -76,7 +76,7 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white px-6 py-24 sm:px-8">
+    <main className="min-h-screen bg-white px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -84,21 +84,21 @@ export default function ContactPage() {
           transition={{ duration: 0.6 }}
           className="max-w-2xl"
         >
-          <h1 className="text-4xl font-semibold tracking-tight text-black sm:text-5xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-black sm:text-4xl lg:text-5xl">
             Contact us
           </h1>
 
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-neutral-500">
+          <p className="mt-4 max-w-xl text-base leading-7 text-neutral-500 sm:mt-5 sm:text-lg">
             Have a question about your order, downloads, or licensing? Our team
             is here to help.
           </p>
 
-          <div className="mt-6 inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm text-neutral-600">
+          <div className="mt-5 inline-flex max-w-full items-center rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-xs text-neutral-600 sm:mt-6 sm:text-sm">
             💬 Usually replies within 24 hours on business days
           </div>
         </motion.div>
 
-        <div className="mt-16 grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
+        <div className="mt-8 grid grid-cols-1 gap-5 sm:mt-10 sm:gap-6 lg:mt-14 lg:grid-cols-12 lg:items-start lg:gap-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -106,23 +106,23 @@ export default function ContactPage() {
             whileHover={{ scale: 1.005 }}
             className="lg:col-span-7"
           >
-            <div className="rounded-[2rem] border border-neutral-200 bg-white p-8 shadow-sm sm:p-10">
+            <div className="rounded-[1.5rem] border border-neutral-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-6 lg:p-8">
               {success && (
-                <div className="mb-8 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-800">
+                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 sm:mb-6 sm:px-5 sm:py-4">
                   <span className="mt-0.5">✅</span>
-                  <p>{success}</p>
+                  <p className="leading-6">{success}</p>
                 </div>
               )}
 
               {error && (
-                <div className="mb-8 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:mb-6 sm:px-5 sm:py-4">
                   <span className="mt-0.5">⚠️</span>
-                  <p>{error}</p>
+                  <p className="leading-6">{error}</p>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-10">
-                <div className="grid gap-8 sm:grid-cols-2">
+              <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
                   <Input
                     label="Email address"
                     value={form.email}
@@ -152,22 +152,22 @@ export default function ContactPage() {
                     disabled={loading}
                     onChange={(e) => updateField("message", e.target.value)}
                     placeholder="Write your message..."
-                    className="mt-3 w-full resize-none rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm text-black outline-none transition-all duration-200 focus:border-black focus:bg-white focus:ring-2 focus:ring-black/5 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="mt-3 min-h-[180px] w-full resize-none rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3.5 text-sm text-black outline-none transition-all duration-200 focus:border-black focus:bg-white focus:ring-2 focus:ring-black/5 disabled:cursor-not-allowed disabled:opacity-70 sm:px-5 sm:py-4"
                   />
-                  <p className="mt-3 text-xs text-neutral-500">
+                  <p className="mt-3 text-xs leading-5 text-neutral-500">
                     Include your order number or product name for faster help.
                   </p>
                 </div>
 
                 <div>
                   <motion.button
-                    whileTap={{ scale: 0.97 }}
+                    whileTap={{ scale: 0.98 }}
                     whileHover={{ y: -2 }}
                     type="submit"
                     disabled={loading}
                     className="
-                      inline-flex items-center justify-center gap-2
-                      rounded-full bg-black px-10 py-4
+                      inline-flex min-h-12 w-full items-center justify-center gap-2
+                      rounded-2xl bg-black px-6 py-3.5
                       text-sm font-semibold text-white
                       shadow-[0_10px_30px_rgba(0,0,0,0.2)]
                       transition-all duration-300
@@ -175,6 +175,7 @@ export default function ContactPage() {
                       hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]
                       active:translate-y-0
                       disabled:cursor-not-allowed disabled:opacity-60
+                      sm:w-auto sm:rounded-full sm:px-10 sm:py-4
                     "
                   >
                     {loading ? "Sending message..." : "Send message"}
@@ -190,14 +191,14 @@ export default function ContactPage() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="lg:col-span-5"
           >
-            <div className="rounded-[2rem] border border-neutral-200 bg-neutral-50 p-10 sm:p-12">
-              <h3 className="text-xl font-semibold text-black">
+            <div className="rounded-[1.5rem] border border-neutral-200 bg-neutral-50 p-5 sm:rounded-[2rem] sm:p-7 lg:p-9">
+              <h3 className="text-lg font-semibold text-black sm:text-xl">
                 Support information
               </h3>
 
-              <div className="my-8 h-px bg-neutral-200" />
+              <div className="my-5 h-px bg-neutral-200 sm:my-6" />
 
-              <div className="space-y-8 text-sm text-neutral-600">
+              <div className="space-y-5 text-sm text-neutral-600 sm:space-y-6">
                 <div>
                   <p className="font-medium text-black">Response time</p>
                   <p className="mt-2 leading-6">
@@ -255,11 +256,12 @@ function Input({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="
-          mt-3 w-full rounded-2xl border border-neutral-200
-          bg-neutral-50 px-5 py-4 text-sm text-black outline-none
+          mt-3 min-h-12 w-full rounded-2xl border border-neutral-200
+          bg-neutral-50 px-4 py-3.5 text-sm text-black outline-none
           transition-all duration-200
           focus:border-black focus:bg-white focus:ring-2 focus:ring-black/5
           disabled:cursor-not-allowed disabled:opacity-70
+          sm:px-5 sm:py-4
         "
       />
     </div>
