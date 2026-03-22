@@ -270,7 +270,7 @@ function LoginPageContent() {
             initial={{ opacity: 0, x: -24 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="order-2 lg:order-1"
+            className="hidden lg:block"
           >
             <div className="mx-auto max-w-2xl lg:mx-0">
               <div className="mb-4 inline-flex items-center rounded-full border border-slate-200/80 bg-white/88 px-4 py-2 text-xs font-medium text-slate-600 shadow-[0_6px_18px_rgba(15,23,42,0.03)] sm:mb-6 sm:text-sm">
@@ -380,14 +380,10 @@ function LoginPageContent() {
               delay: 0.05,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className="order-1 mx-auto w-full max-w-md lg:order-2"
+            className="mx-auto w-full max-w-md"
           >
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] sm:p-6 lg:p-7">
               <div className="mx-auto mb-5 max-w-xs space-y-2 text-center sm:mb-6 sm:space-y-3">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 lg:hidden">
-                  PrintPocketShop
-                </div>
-
                 <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-950 sm:text-3xl">
                   Welcome Back
                 </h2>
@@ -450,23 +446,23 @@ function LoginPageContent() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                  <label className="flex items-center gap-2 text-sm text-slate-600">
+                <div className="flex flex-col gap-3 pt-1">
+                  <label className="flex w-fit items-center gap-3 text-sm text-slate-600">
                     <input
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
                       disabled={loading}
-                      className="h-4 w-4 rounded border-slate-300 text-black focus:ring-2 focus:ring-slate-300"
+                      className="h-4 w-4 shrink-0 rounded border-slate-300 text-black focus:ring-2 focus:ring-slate-300"
                     />
-                    Remember me
+                    <span className="leading-5">Remember me</span>
                   </label>
 
                   <motion.div
                     whileHover="hover"
                     initial="rest"
                     animate="rest"
-                    className="inline-flex"
+                    className="inline-flex sm:self-end"
                   >
                     <Link
                       href="/forgot-password"
