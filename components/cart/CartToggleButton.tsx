@@ -113,15 +113,30 @@ function getDefaultPosition(): Position {
 function getInitialPosition(): Position {
   if (typeof window === "undefined") return getDefaultPosition();
 
+  const bounds = getFrameBounds();
+
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as Position;
-      return projectToFrame(parsed);
+
+      const projected = projectToFrame(parsed);
+
+      if (projected.x < bounds.maxX * 0.5) {
+        return {
+          x: bounds.maxX,
+          y: projected.y,
+        };
+      }
+
+      return projected;
     }
   } catch {}
 
-  return getDefaultPosition();
+  return {
+    x: bounds.maxX,
+    y: bounds.minY,
+  };
 }
 
 export default function CartToggleButton() {
