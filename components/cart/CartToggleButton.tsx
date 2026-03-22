@@ -5,117 +5,86 @@ import { useCart } from "@/components/cart/CartContext";
 import CartDrawer from "./CartDrawer";
 import clsx from "clsx";
 
-const BUTTON_SIZE = 48;
+const BUTTON_WIDTH = 56;
+const BUTTON_HEIGHT = 56;
 const MARGIN = 12;
 const DRAG_THRESHOLD = 6;
 const STORAGE_KEY = "pps-cart-button-position";
 
 /**
- * Top frame line for the homepage.
- * This places the cart under the "Sign in" button by default
- * and keeps it out of the header/nav area.
+ * Keeps the button below the header / sign-in area on both desktop and mobile.
  */
-const TOP_FRAME_Y = 156;
+const HEADER_SAFE_BOTTOM = 92;
+
+type Side = "left" | "right";
 
 type Position = {
-  x: number;
+  side: Side;
   y: number;
 };
 
-type FrameBounds = {
-  minX: number;
-  maxX: number;
+type VerticalBounds = {
   minY: number;
   maxY: number;
 };
 
-function getFrameBounds(): FrameBounds {
+function getVerticalBounds(): VerticalBounds {
   if (typeof window === "undefined") {
     return {
-      minX: MARGIN,
-      maxX: MARGIN,
-      minY: TOP_FRAME_Y,
-      maxY: TOP_FRAME_Y,
+      minY: HEADER_SAFE_BOTTOM + MARGIN,
+      maxY: HEADER_SAFE_BOTTOM + MARGIN,
     };
   }
 
   return {
-    minX: MARGIN,
-    maxX: Math.max(MARGIN, window.innerWidth - BUTTON_SIZE - MARGIN),
-    minY: TOP_FRAME_Y,
-    maxY: Math.max(TOP_FRAME_Y, window.innerHeight - BUTTON_SIZE - MARGIN),
+    minY: HEADER_SAFE_BOTTOM + MARGIN,
+    maxY: Math.max(
+      HEADER_SAFE_BOTTOM + MARGIN,
+      window.innerHeight - BUTTON_HEIGHT - MARGIN
+    ),
   };
 }
 
-function clampToBounds(pos: Position, bounds: FrameBounds): Position {
-  return {
-    x: Math.min(Math.max(pos.x, bounds.minX), bounds.maxX),
-    y: Math.min(Math.max(pos.y, bounds.minY), bounds.maxY),
-  };
+function clampY(y: number, bounds: VerticalBounds): number {
+  return Math.min(Math.max(y, bounds.minY), bounds.maxY);
+}
+
+function getXForSide(side: Side): number {
+  if (typeof window === "undefined") {
+    return side === "left" ? MARGIN : MARGIN;
+  }
+
+  return side === "left"
+    ? MARGIN
+    : Math.max(MARGIN, window.innerWidth - BUTTON_WIDTH - MARGIN);
 }
 
 /**
- * Keep the cart button strictly on the outer homepage frame:
- * - left side
- * - right side
- * - top frame line
- * - bottom frame line
- *
- * It can move around corners and switch sides by dragging,
- * but it can never enter the middle of the page.
- */
-function projectToFrame(pos: Position): Position {
-  if (typeof window === "undefined") return pos;
-
-  const bounds = getFrameBounds();
-  const clamped = clampToBounds(pos, bounds);
-
-  const distanceToLeft = Math.abs(clamped.x - bounds.minX);
-  const distanceToRight = Math.abs(clamped.x - bounds.maxX);
-  const distanceToTop = Math.abs(clamped.y - bounds.minY);
-  const distanceToBottom = Math.abs(clamped.y - bounds.maxY);
-
-  const minDistance = Math.min(
-    distanceToLeft,
-    distanceToRight,
-    distanceToTop,
-    distanceToBottom
-  );
-
-  if (minDistance === distanceToLeft) {
-    return { x: bounds.minX, y: clamped.y };
-  }
-
-  if (minDistance === distanceToRight) {
-    return { x: bounds.maxX, y: clamped.y };
-  }
-
-  if (minDistance === distanceToTop) {
-    return { x: clamped.x, y: bounds.minY };
-  }
-
-  return { x: clamped.x, y: bounds.maxY };
-}
-
-/**
- * Default start position:
- * top-right corner of the homepage frame,
- * directly under the "Sign in" button area.
+ * Default position:
+ * right side, directly under the sign-in button / header area.
  */
 function getDefaultPosition(): Position {
-  if (typeof window === "undefined") {
-    return {
-      x: MARGIN,
-      y: TOP_FRAME_Y,
-    };
-  }
-
-  const bounds = getFrameBounds();
+  const bounds = getVerticalBounds();
 
   return {
-    x: bounds.maxX,
+    side: "right",
     y: bounds.minY,
   };
+}
+
+function normalizePosition(pos: Partial<Position> | null | undefined): Position {
+  const bounds = getVerticalBounds();
+  const safeDefault = getDefaultPosition();
+
+  if (!pos) return safeDefault;
+
+  const side: Side = pos.side === "left" ? "left" : "right";
+  const y =
+    typeof pos.y === "number" && Number.isFinite(pos.y)
+      ? clampY(pos.y, bounds)
+      : safeDefault.y;
+
+  return { side, y };
 }
 
 function getInitialPosition(): Position {
@@ -123,14 +92,10 @@ function getInitialPosition(): Position {
 
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-
     if (saved) {
-      const parsed = JSON.parse(saved) as Position;
-      return projectToFrame(parsed);
+      return normalizePosition(JSON.parse(saved) as Partial<Position>);
     }
-  } catch {
-    // Ignore invalid saved position and fall back to default
-  }
+  } catch {}
 
   return getDefaultPosition();
 }
@@ -145,7 +110,7 @@ export default function CartToggleButton() {
     pointerId: null as number | null,
     startX: 0,
     startY: 0,
-    originX: 0,
+    originSide: "right" as Side,
     originY: 0,
     moved: false,
   });
@@ -162,7 +127,7 @@ export default function CartToggleButton() {
 
   useEffect(() => {
     const handleResize = () => {
-      setPosition((prev) => projectToFrame(prev));
+      setPosition((prev) => normalizePosition(prev));
     };
 
     window.addEventListener("resize", handleResize);
@@ -174,7 +139,7 @@ export default function CartToggleButton() {
       pointerId: e.pointerId,
       startX: e.clientX,
       startY: e.clientY,
-      originX: position.x,
+      originSide: position.side,
       originY: position.y,
       moved: false,
     };
@@ -198,12 +163,21 @@ export default function CartToggleButton() {
 
     if (!dragRef.current.moved) return;
 
-    const rawNext = {
-      x: dragRef.current.originX + dx,
-      y: dragRef.current.originY + dy,
-    };
+    const bounds = getVerticalBounds();
+    const nextY = clampY(dragRef.current.originY + dy, bounds);
 
-    setPosition(projectToFrame(rawNext));
+    /**
+     * Side switching:
+     * The button only lives on the left or right frame edge.
+     * Dragging across the screen midpoint switches sides.
+     */
+    const nextSide: Side =
+      e.clientX <= window.innerWidth / 2 ? "left" : "right";
+
+    setPosition({
+      side: nextSide,
+      y: nextY,
+    });
   };
 
   const endDrag = (pointerId: number) => {
@@ -239,39 +213,51 @@ export default function CartToggleButton() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
         style={{
-          left: `${position.x}px`,
+          left: `${getXForSide(position.side)}px`,
           top: `${position.y}px`,
         }}
         className={clsx(
           "fixed z-40 flex items-center justify-center",
-          "h-12 w-12 rounded-full border border-border bg-background",
-          "shadow-[0_10px_30px_rgba(0,0,0,0.12)]",
+          "h-14 w-14 rounded-full",
+          "border border-black/5 bg-white/95 backdrop-blur-md",
+          "shadow-[0_12px_30px_rgba(15,23,42,0.14),0_2px_8px_rgba(15,23,42,0.08)]",
           "touch-none select-none",
+          "transition-[transform,box-shadow,background-color] duration-200",
           isDragging
-            ? "scale-[1.05] shadow-[0_18px_50px_rgba(0,0,0,0.2)]"
-            : "hover:scale-[1.03] hover:shadow-[0_16px_40px_rgba(0,0,0,0.16)] active:scale-[0.95]",
+            ? "scale-[1.05] shadow-[0_18px_42px_rgba(15,23,42,0.22),0_4px_14px_rgba(15,23,42,0.12)]"
+            : "hover:scale-[1.03] hover:shadow-[0_16px_38px_rgba(15,23,42,0.18),0_4px_12px_rgba(15,23,42,0.1)] active:scale-[0.96]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-2"
         )}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-5 w-5 text-foreground"
-          aria-hidden="true"
-        >
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
+        <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white to-slate-50" />
+
+        <span className="relative flex items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-[22px] w-[22px] text-slate-900"
+            aria-hidden="true"
+          >
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+        </span>
 
         {itemCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-semibold text-white shadow-sm">
-            {itemCount}
+          <span
+            className={clsx(
+              "absolute -right-1 -top-1 flex min-w-[22px] items-center justify-center rounded-full px-1.5",
+              "h-[22px] text-[11px] font-semibold leading-none text-white",
+              "bg-black shadow-[0_4px_10px_rgba(0,0,0,0.22)]"
+            )}
+          >
+            {itemCount > 99 ? "99+" : itemCount}
           </span>
         )}
       </button>
