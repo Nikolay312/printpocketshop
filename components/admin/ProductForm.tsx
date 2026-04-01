@@ -85,10 +85,6 @@ export default function ProductForm({
 
   const [uploading, setUploading] = useState(false);
 
-  /* =========================
-     GUARD: cannot publish without file
-  ========================= */
-
   useEffect(() => {
     if (status === "PUBLISHED" && productFiles.length === 0) {
       setStatus("DRAFT");
@@ -104,16 +100,15 @@ export default function ProductForm({
     });
   }
 
-  /* =========================
-     FILE UPLOAD HANDLERS
-  ========================= */
-
   async function uploadPreviewImages(files: File[]) {
     setUploading(true);
 
     try {
-      const uploadedUrls = await Promise.all(
-        files.map(async (file) => {
+      const uploadedUrls: string[] = [];
+      const failedFiles: string[] = [];
+
+      for (const file of files) {
+        try {
           const formData = new FormData();
           formData.append("file", file);
 
@@ -124,20 +119,26 @@ export default function ProductForm({
 
           if (!res.ok) {
             const text = await res.text();
-            throw new Error(
-              `Preview upload failed: ${res.status} ${text}`
-            );
+            console.error(`Preview upload failed for ${file.name}:`, text);
+            failedFiles.push(file.name);
+            continue;
           }
 
           const { url } = (await res.json()) as { url: string };
-          return url;
-        })
-      );
+          uploadedUrls.push(url);
+        } catch (error) {
+          console.error(`Preview upload crashed for ${file.name}:`, error);
+          failedFiles.push(file.name);
+        }
+      }
 
-      setPreviewImages((prev) => [...prev, ...uploadedUrls]);
-    } catch (err) {
-      console.error(err);
-      alert("Preview image upload failed.");
+      if (uploadedUrls.length > 0) {
+        setPreviewImages((prev) => [...prev, ...uploadedUrls]);
+      }
+
+      if (failedFiles.length > 0) {
+        alert(`Some preview images failed: ${failedFiles.join(", ")}`);
+      }
     } finally {
       setUploading(false);
     }
@@ -147,8 +148,11 @@ export default function ProductForm({
     setUploading(true);
 
     try {
-      const uploadedKeys = await Promise.all(
-        files.map(async (file) => {
+      const uploadedKeys: string[] = [];
+      const failedFiles: string[] = [];
+
+      for (const file of files) {
+        try {
           const formData = new FormData();
           formData.append("file", file);
 
@@ -159,36 +163,30 @@ export default function ProductForm({
 
           if (!res.ok) {
             const text = await res.text();
-            throw new Error(
-              `File upload failed: ${res.status} ${text}`
-            );
+            console.error(`Product file upload failed for ${file.name}:`, text);
+            failedFiles.push(file.name);
+            continue;
           }
 
-          const { fileKey } = (await res.json()) as {
-            fileKey: string;
-          };
+          const { fileKey } = (await res.json()) as { fileKey: string };
+          uploadedKeys.push(fileKey);
+        } catch (error) {
+          console.error(`Product file upload crashed for ${file.name}:`, error);
+          failedFiles.push(file.name);
+        }
+      }
 
-          return fileKey;
-        })
-      );
+      if (uploadedKeys.length > 0) {
+        setProductFiles((prev) => [...prev, ...uploadedKeys]);
+      }
 
-      setProductFiles((prev) => {
-        const merged = [...prev, ...uploadedKeys];
-        console.log("Uploaded file keys:", uploadedKeys);
-        console.log("Merged product files:", merged, merged.length);
-        return merged;
-      });
-    } catch (err) {
-      console.error(err);
-      alert("Product file upload failed.");
+      if (failedFiles.length > 0) {
+        alert(`Some product files failed: ${failedFiles.join(", ")}`);
+      }
     } finally {
       setUploading(false);
     }
   }
-
-  /* =========================
-     SUBMIT
-  ========================= */
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -201,8 +199,6 @@ export default function ProductForm({
 
     const priceCents = Math.round(euros * 100);
 
-    console.log("Submitting files:", productFiles, productFiles.length);
-
     onSubmit({
       title,
       description,
@@ -214,10 +210,6 @@ export default function ProductForm({
       previewImages,
     });
   }
-
-  /* =========================
-     RENDER
-  ========================= */
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
@@ -274,8 +266,7 @@ export default function ProductForm({
       >
         <option value="DRAFT">Draft</option>
         <option value="PUBLISHED" disabled={productFiles.length === 0}>
-          Published{" "}
-          {productFiles.length === 0 ? "(upload file first)" : ""}
+          Published {productFiles.length === 0 ? "(upload file first)" : ""}
         </option>
       </select>
 
@@ -303,12 +294,8 @@ export default function ProductForm({
           multiple
           disabled={uploading}
           onChange={async (e) => {
-            const files = e.target.files
-              ? Array.from(e.target.files)
-              : [];
-
+            const files = e.target.files ? Array.from(e.target.files) : [];
             if (!files.length) return;
-
             await uploadPreviewImages(files);
             e.target.value = "";
           }}
@@ -321,16 +308,11 @@ export default function ProductForm({
                 key={`${img}-${index}`}
                 draggable
                 onDragStart={(e) =>
-                  e.dataTransfer.setData(
-                    "text/plain",
-                    index.toString()
-                  )
+                  e.dataTransfer.setData("text/plain", index.toString())
                 }
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
-                  const from = Number(
-                    e.dataTransfer.getData("text/plain")
-                  );
+                  const from = Number(e.dataTransfer.getData("text/plain"));
                   moveImage(from, index);
                 }}
                 className="relative cursor-move"
@@ -360,20 +342,12 @@ export default function ProductForm({
           multiple
           disabled={uploading}
           onChange={async (e) => {
-            const files = e.target.files
-              ? Array.from(e.target.files)
-              : [];
-
+            const files = e.target.files ? Array.from(e.target.files) : [];
             if (!files.length) return;
-
             await uploadProductFiles(files);
             e.target.value = "";
           }}
         />
-
-        <p className="text-sm text-muted-foreground">
-          Files selected: {productFiles.length}
-        </p>
 
         {productFiles.length > 0 && (
           <ul className="space-y-1 text-sm">

@@ -5,22 +5,25 @@ import { checkRateLimit } from "@/lib/rateLimit";
 
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 
-// Safer: validate by extension (MIME types are unreliable)
+// Safer: validate by extension (primary layer)
 const allowedExtensions = [
   ".pdf",
   ".zip",
+  ".doc",
   ".docx",
   ".png",
   ".jpg",
   ".jpeg",
 ];
 
-// Optional: keep MIME validation as secondary layer
+// MIME validation (secondary safety layer)
 const allowedMimeTypes = [
   "application/pdf",
   "application/zip",
   "application/x-zip-compressed",
   "application/octet-stream",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "image/png",
   "image/jpeg",
 ];
@@ -68,23 +71,19 @@ export async function POST(req: Request) {
     // Extension check (primary validation)
     if (!hasAllowedExtension(file.name)) {
       return NextResponse.json(
-        { error: "Unsupported file type" },
+        { error: `Unsupported file type: ${file.name}` },
         { status: 400 }
       );
     }
 
-    // MIME fallback validation (secondary safety)
-    if (
-      file.type &&
-      !allowedMimeTypes.includes(file.type)
-    ) {
+    // MIME fallback validation (log only, not blocking)
+    if (file.type && !allowedMimeTypes.includes(file.type)) {
       console.warn(
         "Unexpected MIME type:",
         file.type,
         "for file:",
         file.name
       );
-      // Not blocking here — extension already validated
     }
 
     const fileKey = await uploadPrivateFile(file);
