@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/adminGuard";
 import { uploadPrivateFile } from "@/lib/storage";
@@ -5,7 +7,7 @@ import { checkRateLimit } from "@/lib/rateLimit";
 
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 
-// Safer: validate by extension (primary layer)
+// Primary validation (extension-based)
 const allowedExtensions = [
   ".pdf",
   ".zip",
@@ -16,7 +18,7 @@ const allowedExtensions = [
   ".jpeg",
 ];
 
-// MIME validation (secondary safety layer)
+// Secondary validation (MIME)
 const allowedMimeTypes = [
   "application/pdf",
   "application/zip",
@@ -60,7 +62,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Size check
+    // 🔍 DEBUG LOG (important)
+    console.log("UPLOAD FILE:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
+
+    // Size validation
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { error: "File too large (max 100MB)" },
@@ -68,7 +77,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Extension check (primary validation)
+    // Extension validation
     if (!hasAllowedExtension(file.name)) {
       return NextResponse.json(
         { error: `Unsupported file type: ${file.name}` },
@@ -76,7 +85,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // MIME fallback validation (log only, not blocking)
+    // MIME warning (non-blocking)
     if (file.type && !allowedMimeTypes.includes(file.type)) {
       console.warn(
         "Unexpected MIME type:",
@@ -87,6 +96,9 @@ export async function POST(req: Request) {
     }
 
     const fileKey = await uploadPrivateFile(file);
+
+    // 🔍 DEBUG LOG (important)
+    console.log("UPLOADED KEY:", fileKey);
 
     return NextResponse.json({ fileKey });
   } catch (err: unknown) {
