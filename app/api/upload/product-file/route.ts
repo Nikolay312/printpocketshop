@@ -7,7 +7,6 @@ import { checkRateLimit } from "@/lib/rateLimit";
 
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 
-// Primary validation (extension-based)
 const allowedExtensions = [
   ".pdf",
   ".zip",
@@ -18,7 +17,6 @@ const allowedExtensions = [
   ".jpeg",
 ];
 
-// Secondary validation (MIME)
 const allowedMimeTypes = [
   "application/pdf",
   "application/zip",
@@ -62,14 +60,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔍 DEBUG LOG (important)
     console.log("UPLOAD FILE:", {
       name: file.name,
       type: file.type,
       size: file.size,
     });
 
-    // Size validation
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { error: "File too large (max 100MB)" },
@@ -77,7 +73,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Extension validation
     if (!hasAllowedExtension(file.name)) {
       return NextResponse.json(
         { error: `Unsupported file type: ${file.name}` },
@@ -85,7 +80,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // MIME warning (non-blocking)
     if (file.type && !allowedMimeTypes.includes(file.type)) {
       console.warn(
         "Unexpected MIME type:",
@@ -97,7 +91,6 @@ export async function POST(req: Request) {
 
     const fileKey = await uploadPrivateFile(file);
 
-    // 🔍 DEBUG LOG (important)
     console.log("UPLOADED KEY:", fileKey);
 
     return NextResponse.json({ fileKey });
@@ -105,17 +98,17 @@ export async function POST(req: Request) {
     console.error("Product file upload failed:", err);
 
     let message = "Upload failed";
+    let stack: string | undefined;
 
     if (err instanceof Error) {
       message = err.message;
+      stack = err.stack;
     }
 
     return NextResponse.json(
       {
-        error:
-          process.env.NODE_ENV === "development"
-            ? message
-            : "Upload failed",
+        error: message,
+        stack,
       },
       { status: 500 }
     );
