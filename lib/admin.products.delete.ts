@@ -32,8 +32,22 @@ export async function deleteAdminProduct(productId: string) {
     return { deleted: false, archived: true };
   }
 
-  await prisma.product.delete({
-    where: { id: productId },
+  await prisma.$transaction(async (tx) => {
+    await tx.cartItem.deleteMany({
+      where: { productId },
+    });
+
+    await tx.productFile.deleteMany({
+      where: { productId },
+    });
+
+    await tx.productImage.deleteMany({
+      where: { productId },
+    });
+
+    await tx.product.delete({
+      where: { id: productId },
+    });
   });
 
   return { deleted: true, archived: false };
