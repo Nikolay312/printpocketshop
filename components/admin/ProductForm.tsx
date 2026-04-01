@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /* =========================
    TYPES
@@ -111,6 +111,8 @@ export default function ProductForm({
   async function uploadPreviewImages(files: File[]) {
     setUploading(true);
     try {
+      const uploadedUrls: string[] = [];
+
       for (const file of files) {
         const formData = new FormData();
         formData.append("file", file);
@@ -125,8 +127,10 @@ export default function ProductForm({
         }
 
         const { url } = (await res.json()) as { url: string };
-        setPreviewImages((prev) => [...prev, url]);
+        uploadedUrls.push(url);
       }
+
+      setPreviewImages((prev) => [...prev, ...uploadedUrls]);
     } catch (err) {
       console.error(err);
       alert("Preview image upload failed.");
@@ -138,6 +142,8 @@ export default function ProductForm({
   async function uploadProductFiles(files: File[]) {
     setUploading(true);
     try {
+      const uploadedKeys: string[] = [];
+
       for (const file of files) {
         const formData = new FormData();
         formData.append("file", file);
@@ -152,8 +158,10 @@ export default function ProductForm({
         }
 
         const { fileKey } = (await res.json()) as { fileKey: string };
-        setProductFiles((prev) => [...prev, fileKey]);
+        uploadedKeys.push(fileKey);
       }
+
+      setProductFiles((prev) => [...prev, ...uploadedKeys]);
     } catch (err) {
       console.error(err);
       alert("Product file upload failed.");
@@ -290,7 +298,7 @@ export default function ProductForm({
           <div className="grid grid-cols-3 gap-2">
             {previewImages.map((img: string, index: number) => (
               <div
-                key={img}
+                key={`${img}-${index}`}
                 draggable
                 onDragStart={(e) =>
                   e.dataTransfer.setData(
@@ -345,7 +353,7 @@ export default function ProductForm({
           <ul className="space-y-1 text-sm">
             {productFiles.map((key: string, index: number) => (
               <li
-                key={key}
+                key={`${key}-${index}`}
                 className="flex items-center justify-between rounded border p-2"
               >
                 <span className="truncate">
@@ -377,4 +385,4 @@ export default function ProductForm({
       </button>
     </form>
   );
-} 
+}
