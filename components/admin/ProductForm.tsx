@@ -110,25 +110,29 @@ export default function ProductForm({
 
   async function uploadPreviewImages(files: File[]) {
     setUploading(true);
+
     try {
-      const uploadedUrls: string[] = [];
+      const uploadedUrls = await Promise.all(
+        files.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
 
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
+          const res = await fetch("/api/upload/preview-image", {
+            method: "POST",
+            body: formData,
+          });
 
-        const res = await fetch("/api/upload/preview-image", {
-          method: "POST",
-          body: formData,
-        });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(
+              `Preview upload failed: ${res.status} ${text}`
+            );
+          }
 
-        if (!res.ok) {
-          throw new Error("Preview upload failed");
-        }
-
-        const { url } = (await res.json()) as { url: string };
-        uploadedUrls.push(url);
-      }
+          const { url } = (await res.json()) as { url: string };
+          return url;
+        })
+      );
 
       setPreviewImages((prev) => [...prev, ...uploadedUrls]);
     } catch (err) {
@@ -141,27 +145,39 @@ export default function ProductForm({
 
   async function uploadProductFiles(files: File[]) {
     setUploading(true);
+
     try {
-      const uploadedKeys: string[] = [];
+      const uploadedKeys = await Promise.all(
+        files.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
 
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
+          const res = await fetch("/api/upload/product-file", {
+            method: "POST",
+            body: formData,
+          });
 
-        const res = await fetch("/api/upload/product-file", {
-          method: "POST",
-          body: formData,
-        });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(
+              `File upload failed: ${res.status} ${text}`
+            );
+          }
 
-        if (!res.ok) {
-          throw new Error("File upload failed");
-        }
+          const { fileKey } = (await res.json()) as {
+            fileKey: string;
+          };
 
-        const { fileKey } = (await res.json()) as { fileKey: string };
-        uploadedKeys.push(fileKey);
-      }
+          return fileKey;
+        })
+      );
 
-      setProductFiles((prev) => [...prev, ...uploadedKeys]);
+      setProductFiles((prev) => {
+        const merged = [...prev, ...uploadedKeys];
+        console.log("Uploaded file keys:", uploadedKeys);
+        console.log("Merged product files:", merged, merged.length);
+        return merged;
+      });
     } catch (err) {
       console.error(err);
       alert("Product file upload failed.");
@@ -184,6 +200,8 @@ export default function ProductForm({
     }
 
     const priceCents = Math.round(euros * 100);
+
+    console.log("Submitting files:", productFiles, productFiles.length);
 
     onSubmit({
       title,
@@ -284,12 +302,14 @@ export default function ProductForm({
           type="file"
           multiple
           disabled={uploading}
-          onChange={(e) => {
+          onChange={async (e) => {
             const files = e.target.files
               ? Array.from(e.target.files)
               : [];
+
             if (!files.length) return;
-            uploadPreviewImages(files);
+
+            await uploadPreviewImages(files);
             e.target.value = "";
           }}
         />
@@ -339,15 +359,21 @@ export default function ProductForm({
           type="file"
           multiple
           disabled={uploading}
-          onChange={(e) => {
+          onChange={async (e) => {
             const files = e.target.files
               ? Array.from(e.target.files)
               : [];
+
             if (!files.length) return;
-            uploadProductFiles(files);
+
+            await uploadProductFiles(files);
             e.target.value = "";
           }}
         />
+
+        <p className="text-sm text-muted-foreground">
+          Files selected: {productFiles.length}
+        </p>
 
         {productFiles.length > 0 && (
           <ul className="space-y-1 text-sm">
