@@ -1,8 +1,9 @@
 "use client";
 
+import React from "react";
+
 type Props = {
   label: string;
-  endpoint: "/api/upload/product-file" | "/api/upload/preview-image";
   accept?: string;
   multiple?: boolean;
   onUploaded: (value: string | string[]) => void;
@@ -10,11 +11,45 @@ type Props = {
 
 export default function UploadField({
   label,
-  endpoint,
   accept,
   multiple = false,
   onUploaded,
 }: Props) {
+  async function uploadFile(file: File): Promise<string> {
+    // 1. Get presigned URL
+    const res = await fetch("/api/upload/presigned-url", {
+      method: "POST",
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to get upload URL");
+    }
+
+    const { uploadUrl, fileKey } = await res.json();
+
+    // 2. Upload directly to R2
+    const uploadRes = await fetch(uploadUrl, {
+      method: "PUT",
+      body: file,
+      headers: {
+        "Content-Type": file.type,
+      },
+    });
+
+    if (!uploadRes.ok) {
+      throw new Error(`Upload failed: ${file.name}`);
+    }
+
+    return fileKey;
+  }
+
   async function handleChange(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
@@ -24,24 +59,14 @@ export default function UploadField({
     const uploaded: string[] = [];
 
     for (const file of files) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error ?? "Upload failed");
+      try {
+        const key = await uploadFile(file);
+        uploaded.push(key);
+      } catch (err) {
+        console.error(err);
+        alert("Upload failed: " + file.name);
         return;
       }
-
-      // product-file returns { fileKey }
-      // preview-image returns { url }
-      uploaded.push(data.fileKey ?? data.url);
     }
 
     onUploaded(multiple ? uploaded : uploaded[0]);
